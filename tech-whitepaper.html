@@ -790,14 +790,13 @@
                     <h3 class="text-2xl font-bold text-white mb-4">需要更详细的技术资料？</h3>
                     <p class="text-slate-400 mb-6">包含完整算法推导、数据库Schema、API文档与性能测试原始数据</p>
                     <div class="flex flex-wrap justify-center gap-4">
-                        <a href="mailto:contact@carbonwise.com" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition">
-                            联系技术团队
-                        </a>
-                        <a href="index.html" class="px-6 py-3 border border-slate-600 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 rounded-lg font-medium transition">
+                         <button onclick="openModal()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition cursor-pointer">联系技术团队
+                         </button>
+                         <a href="index.html" class="px-6 py-3 border border-slate-600 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 rounded-lg font-medium transition">
                             返回产品首页
                         </a>
                     </div>
-                    <p class="text-xs text-slate-600 mt-4">文档版本 v2.1.0 | 最后更新 2026-04-26 | CarbonWise 技术团队</p>
+                    <p class="text-xs text-slate-600 mt-4">文档版本 v2.1.0 | 最后更新 2026-04-26 | 真理之下团队</p>
                 </div>
 
             </main>
@@ -820,6 +819,293 @@
                 link.classList.remove('active');
                 if (link.getAttribute('href') === '#' + current) link.classList.add('active');
             });
+        });
+    </script>
+    <!-- 联系弹窗 -->
+    <div id="contactModal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- 背景遮罩 -->
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0" id="modalBackdrop"></div>
+
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <!-- 弹窗面板 -->
+                <div class="relative transform overflow-hidden rounded-2xl bg-slate-800 border border-slate-700 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 scale-95" id="modalPanel">
+                    
+                    <!-- 关闭按钮 -->
+                    <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+
+                    <div class="px-6 py-6">
+                        <!-- 头部 -->
+                        <div class="text-center mb-6">
+                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 mb-4">
+                                <svg class="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-white" id="modal-title">联系技术团队</h3>
+                            <p class="mt-2 text-sm text-slate-400">留下您的信息，我们将在24小时内回复</p>
+                        </div>
+
+                        <!-- 表单 -->
+                        <form id="contactForm" class="space-y-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-slate-300 mb-1">姓名 / 企业名称 <span class="text-red-400">*</span></label>
+                                <input type="text" id="name" name="name" required 
+                                    class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                                    placeholder="例如：蓝天纺织 / 王经理">
+                            </div>
+
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-slate-300 mb-1">电子邮箱 <span class="text-red-400">*</span></label>
+                                <input type="email" id="email" name="email" required 
+                                    class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                                    placeholder="your@email.com">
+                            </div>
+
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-slate-300 mb-1">联系电话</label>
+                                <input type="tel" id="phone" name="phone" 
+                                    class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                                    placeholder="138xxxx xxxx">
+                            </div>
+
+                            <div>
+                                <label for="type" class="block text-sm font-medium text-slate-300 mb-1">咨询类型</label>
+                                <select id="type" name="type" 
+                                    class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                                    <option value="enterprise">纺织企业碳核算咨询</option>
+                                    <option value="bank">金融机构数据服务合作</option>
+                                    <option value="investor">投资合作意向</option>
+                                    <option value="technical">技术合作 / API对接</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="message" class="block text-sm font-medium text-slate-300 mb-1">具体需求</label>
+                                <textarea id="message" name="message" rows="3" 
+                                    class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition resize-none"
+                                    placeholder="请简述您的需求，例如：需要为出口欧盟的产品生成碳足迹报告..."></textarea>
+                            </div>
+
+                            <!-- 提交按钮 -->
+                            <button type="submit" id="submitBtn"
+                                class="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold rounded-lg shadow-lg shadow-emerald-500/25 transition transform hover:scale-[1.02] active:scale-[0.98]">
+                                提交咨询
+                            </button>
+
+                            <!-- 成功提示（默认隐藏） -->
+                            <div id="successMsg" class="hidden rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-4 text-center">
+                                <svg class="mx-auto h-6 w-6 text-emerald-400 mb-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <p class="text-emerald-300 font-medium">提交成功！</p>
+                                <p class="text-sm text-emerald-400/80 mt-1">我们已收到您的信息，将在24小时内联系您。</p>
+                            </div>
+
+                            <!-- 错误提示（默认隐藏） -->
+                            <div id="errorMsg" class="hidden rounded-lg bg-red-500/10 border border-red-500/30 p-4 text-center">
+                                <p class="text-red-300 font-medium">提交失败</p>
+                                <p class="text-sm text-red-400/80 mt-1">请检查网络连接，或直接发送邮件至 five_cobblers@163.com</p>
+                            </div>
+                        </form>
+
+                        <!-- 备用联系方式 -->
+                        <div class="mt-6 pt-4 border-t border-slate-700 text-center">
+                            <p class="text-xs text-slate-500 mb-2">或直接联系我们</p>
+                            <div class="flex justify-center items-center space-x-4 text-sm">
+                                <a href="mailto:five_cobblers@163.com" class="text-emerald-400 hover:text-emerald-300 transition flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    five_cobblers@163.com
+                                </a>
+                                <span class="text-slate-500 text-xs">工作日 9:00-18:00 回复</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 弹窗控制
+        const modal = document.getElementById('contactModal');
+        const backdrop = document.getElementById('modalBackdrop');
+        const panel = document.getElementById('modalPanel');
+        const form = document.getElementById('contactForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const successMsg = document.getElementById('successMsg');
+        const errorMsg = document.getElementById('errorMsg');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            void modal.offsetWidth;
+            backdrop.classList.remove('opacity-0');
+            panel.classList.remove('opacity-0', 'scale-95');
+            panel.classList.add('opacity-100', 'scale-100');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            backdrop.classList.add('opacity-0');
+            panel.classList.remove('opacity-100', 'scale-100');
+            panel.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+                form.reset();
+                successMsg.classList.add('hidden');
+                errorMsg.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '提交咨询';
+            }, 200);
+        }
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === backdrop || e.target.closest('#modalBackdrop')) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                type: document.getElementById('type').value,
+                message: document.getElementById('message').value,
+                source: 'tech-whitepaper',
+                timestamp: new Date().toISOString()
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 提交中...';
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                submitBtn.classList.add('hidden');
+                successMsg.classList.remove('hidden');
+                
+            } catch (error) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '提交咨询';
+                errorMsg.classList.remove('hidden');
+                console.error('提交失败:', error);
+            }
+        });
+    </script>
+     <script>
+        // 弹窗控制
+        const modal = document.getElementById('contactModal');
+        const backdrop = document.getElementById('modalBackdrop');
+        const panel = document.getElementById('modalPanel');
+        const form = document.getElementById('contactForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const successMsg = document.getElementById('successMsg');
+        const errorMsg = document.getElementById('errorMsg');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            // 强制重绘
+            void modal.offsetWidth;
+            // 显示动画
+            backdrop.classList.remove('opacity-0');
+            panel.classList.remove('opacity-0', 'scale-95');
+            panel.classList.add('opacity-100', 'scale-100');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            backdrop.classList.add('opacity-0');
+            panel.classList.remove('opacity-100', 'scale-100');
+            panel.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+                // 重置表单
+                form.reset();
+                successMsg.classList.add('hidden');
+                errorMsg.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+            }, 200);
+        }
+
+        // 点击背景关闭
+        modal.addEventListener('click', function(e) {
+            if (e.target === backdrop || e.target.closest('#modalBackdrop')) {
+                closeModal();
+            }
+        });
+
+        // ESC键关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        // 表单提交
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                type: document.getElementById('type').value,
+                message: document.getElementById('message').value,
+                source: 'tech-whitepaper',
+                timestamp: new Date().toISOString()
+            };
+
+            // 显示加载状态
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 提交中...';
+
+            try {
+                // 方案A：如果有后端API，取消下面这行的注释并修改URL
+                // const response = await fetch('https://your-api.com/contact', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(formData)
+                // });
+                
+                // 方案B：当前使用模拟提交（演示用）
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // 模拟成功
+                submitBtn.classList.add('hidden');
+                successMsg.classList.remove('hidden');
+                
+                // 实际有API时用这个判断：
+                // if (response.ok) {
+                //     submitBtn.classList.add('hidden');
+                //     successMsg.classList.remove('hidden');
+                // } else {
+                //     throw new Error('提交失败');
+                // }
+                
+            } catch (error) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '提交咨询';
+                errorMsg.classList.remove('hidden');
+                console.error('提交失败:', error);
+            }
         });
     </script>
 </body>
