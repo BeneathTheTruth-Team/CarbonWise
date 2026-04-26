@@ -2154,46 +2154,38 @@
                 <div class="p-8" id="dash-content-overview">
                     <!-- 核心数据卡片 -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <!-- 卡片1：年碳排放总量 -->
-<div class="glass-dark rounded-2xl p-6">
-    <div class="flex items-center justify-between mb-4">
-        <span class="text-sm text-gray-400">年碳排放总量</span>
-        <span class="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">↓ 12%</span>
-    </div>
-    <div class="text-3xl font-black text-white" id="dash-total">--</div>
-    <div class="text-xs text-gray-500 mt-1" id="dash-total-desc">吨CO₂e | 目标: 3,200</div>
-</div>
-
-<!-- 卡片2：碳效评级 -->
-<div class="glass-dark rounded-2xl p-6">
-    <div class="flex items-center justify-between mb-4">
-        <span class="text-sm text-gray-400">碳效评级</span>
-        <span class="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400" id="dash-rating-badge">AA级</span>
-    </div>
-    <div class="text-3xl font-black text-white" id="dash-rating">--</div>
-    <div class="text-xs text-gray-500 mt-1" id="dash-rating-desc">行业前15% | 上月: A</div>
-</div>
-
-<!-- 卡片3：环境成本 -->
-<div class="glass-dark rounded-2xl p-6">
-    <div class="flex items-center justify-between mb-4">
-        <span class="text-sm text-gray-400">环境成本</span>
-        <span class="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">↓ 8%</span>
-    </div>
-    <div class="text-3xl font-black text-white" id="dash-cost">--</div>
-    <div class="text-xs text-gray-500 mt-1" id="dash-cost-desc">万元/年 | 节省潜力 6万</div>
-</div>
-
-<!-- 卡片4：绿色信贷额度 -->
-<div class="glass-dark rounded-2xl p-6">
-    <div class="flex items-center justify-between mb-4">
-        <span class="text-sm text-gray-400">绿色信贷额度</span>
-        <span class="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">已授信</span>
-    </div>
-    <div class="text-3xl font-black text-white" id="dash-loan">200</div>
-    <div class="text-xs text-gray-500 mt-1">万元 | 利率 3.65%</div>
-</div>
-
+                        <div class="glass-dark rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-400">年碳排放总量</span>
+                                <span class="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">↓ 12%</span>
+                            </div>
+                            <div class="text-3xl font-black text-white">3,610</div>
+                            <div class="text-xs text-gray-500 mt-1">吨CO₂e | 目标: 3,200</div>
+                        </div>
+                        <div class="glass-dark rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-400">碳效评级</span>
+                                <span class="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400">AA级</span>
+                            </div>
+                            <div class="text-3xl font-black text-white">AA</div>
+                            <div class="text-xs text-gray-500 mt-1">行业前15% | 上月: A</div>
+                        </div>
+                        <div class="glass-dark rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-400">环境成本</span>
+                                <span class="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">↓ 8%</span>
+                            </div>
+                            <div class="text-3xl font-black text-white">21.7</div>
+                            <div class="text-xs text-gray-500 mt-1">万元/年 | 节省潜力 6万</div>
+                        </div>
+                        <div class="glass-dark rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-400">绿色信贷额度</span>
+                                <span class="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">已授信</span>
+                            </div>
+                            <div class="text-3xl font-black text-white">200</div>
+                            <div class="text-xs text-gray-500 mt-1">万元 | 利率 3.65%</div>
+                        </div>
                     </div>
 
                     <!-- 图表区域 -->
@@ -4586,11 +4578,6 @@ function scrollToContact(event) {
            // 2秒后跳转到仪表盘
             setTimeout(() => {
                 showPage('dashboard');
-                setTimeout(() => {
-        initDashboardCharts();
-        loadDashboardData();
-    }, 400);
-}, 2000);
                 modal.classList.add('opacity-0');
                 content.classList.remove('scale-100');
                 content.classList.add('scale-90');
@@ -4834,13 +4821,11 @@ function scrollToContact(event) {
             document.getElementById('dash-title').textContent = titles[tab];
             
             // 如果是仪表盘页，初始化图表
-           if (tab === 'overview') {
-        setTimeout(() => {
-            initDashboardCharts();
-            loadDashboardData(); // ← 新增
-        }, 100);
-    }
-}
+            if (tab === 'overview') {
+                setTimeout(initDashboardCharts, 100);
+            }
+        }
+
         function initDashboardCharts() {
             // 趋势图
             const trendChart = echarts.init(document.getElementById('dash-chart-trend'));
@@ -4906,34 +4891,6 @@ function scrollToContact(event) {
                 }]
             });
         }
-        function loadDashboardData() {
-    const saved = localStorage.getItem('carbonDashboardData');
-   if (!saved) {
-        // 显示引导状态
-        document.getElementById('dash-total').textContent = '--';
-        document.getElementById('dash-total-desc').innerHTML = '吨CO₂e | <span class="text-emerald-400 cursor-pointer" onclick="showPage(\'workspace\'); goStep(1)">点击开始核算 →</span>';
-        return;
-    }
-    const data = JSON.parse(saved);
-    
-    // 卡片1：年碳排放总量
-    document.getElementById('dash-total').textContent = data.totalEmission?.toLocaleString() || '--';
-    document.getElementById('dash-total-desc').textContent = `吨CO₂e | 核算于 ${data.lastUpdated?.split(' ')[0] || '--'}`;
-    
-    // 卡片2：碳效评级
-    document.getElementById('dash-rating').textContent = data.rating || '--';
-    document.getElementById('dash-rating-badge').textContent = (data.rating || '--') + '级';
-    document.getElementById('dash-rating-desc').textContent = (data.ratingDesc || '--') + ' | 上月: A';
-    
-    // 卡片3：环境成本
-    document.getElementById('dash-cost').textContent = data.envCost || '--';
-    
-    // 卡片4：绿色信贷额度（根据评级动态调整）
-    const loanMap = { 'AAA': 500, 'AA': 200, 'A': 100, 'BB': 50, 'B': 0 };
-    const loanAmount = loanMap[data.rating] || 200;
-    document.getElementById('dash-loan').textContent = loanAmount;
-}
-
         // ==================== 碳核算工作台 ====================
         
         let currentStep = 1;
@@ -5410,16 +5367,6 @@ function calcFinalResult() {
     else if (intensity < 3.0) rating = 'AA';
     else if (intensity < 3.5) rating = 'A';
     else if (intensity < 4.5) rating = 'BB';
-    // ========== 新增：保存到 localStorage ==========
-    const dashboardData = {
-        totalEmission: Math.round(totalCo2),
-        intensity: intensity,
-        rating: rating,
-        ratingDesc: ratingDesc[rating],
-        envCost: (Math.round(totalCo2) * 60 / 10000).toFixed(1), // 碳价60元/吨
-        lastUpdated: new Date().toLocaleString('zh-CN')
-    };
-    localStorage.setItem('carbonDashboardData', JSON.stringify(dashboardData));
     
     // ========== 写入 Step 3 的 DOM ==========
     document.getElementById('result-total').textContent = Math.round(totalCo2).toLocaleString();
