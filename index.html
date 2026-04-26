@@ -2531,7 +2531,7 @@
 
                             <div class="flex justify-between mt-8">
                                 <button onclick="goStep(1)" class="px-6 py-3 rounded-xl border border-gray-600 text-gray-400 hover:text-white transition"><i class="fas fa-arrow-left mr-2"></i>上一步</button>
-                                <button onclick="goStep(3)" class="btn-glow px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg transition">开始核算 <i class="fas fa-calculator ml-2"></i></button>
+                                <button onclick="calcFinalResult()" class="btn-glow px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg transition">开始核算 <i class="fas fa-calculator ml-2"></i></button>
                             </div>
                         </div>
                     </div>
@@ -2550,18 +2550,18 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                 <div class="bg-white/5 rounded-xl p-6 text-center">
                                     <div class="text-sm text-gray-400 mb-2">年碳排放总量</div>
-                                    <div class="text-4xl font-black text-white">3,610</div>
+                                    <div class="text-4xl font-black text-white" id="result-total">--</div>
                                     <div class="text-xs text-gray-500 mt-1">吨CO₂e</div>
                                 </div>
                                 <div class="bg-white/5 rounded-xl p-6 text-center">
                                     <div class="text-sm text-gray-400 mb-2">吨布碳排放强度</div>
-                                    <div class="text-4xl font-black text-emerald-400">3.01</div>
+                                    <div class="text-4xl font-black text-emerald-400" id="result-intensity">--</div>
                                     <div class="text-xs text-gray-500 mt-1">tCO₂e/吨布</div>
                                 </div>
                                 <div class="bg-white/5 rounded-xl p-6 text-center">
                                     <div class="text-sm text-gray-400 mb-2">碳效评级</div>
-                                    <div class="text-4xl font-black text-blue-400">AA</div>
-                                    <div class="text-xs text-gray-500 mt-1">行业前15%</div>
+                                    <div class="text-4xl font-black text-blue-400" id="result-rating">--</div>
+                                    <div class="text-xs text-gray-500 mt-1" id="result-rating-desc">--</div>
                                 </div>
                             </div>
 
@@ -5320,6 +5320,110 @@ function scrollToContact(event) {
                 alert('🎉 预约成功！\n\n我们的碳管理专家将在24小时内联系您：\n· 企业：' + company + '\n· 联系人：' + name + '\n· 手机：' + phone + '\n\n期待为您演示碳智评的强大功能！');
             }, 300);
         }
+function calcFinalResult() {
+    // ========== 读取 Step 1 的设备数据 ==========
+    const devices = [
+        { key: 'spinning', name: '纺纱' },
+        { key: 'loom', name: '织造' },
+        { key: 'dyeing', name: '印染' },
+        { key: 'sizing', name: '织造前' },
+        { key: 'compressor', name: '辅助' }
+    ];
+    
+    let annualKwh = 0;
+    let processData = []; // 用于图表
+    
+    devices.forEach(d => {
+        const checkbox = document.querySelector(`input[onchange="toggleDevice('${d.key}')"]`);
+        const form = document.getElementById('form-' + d.key);
+        
+        // 只计算勾选且表单可见的设备
+        if (checkbox && checkbox.checked && form && !form.classList.contains('hidden')) {
+            const count = parseFloat(document.getElementById('ws-' + d.key + '-count')?.value || 0);
+            const power = parseFloat(document.getElementById('ws-' + d.key + '-power')?.value || 0);
+            const hours = parseFloat(document.getElementById('ws-' + d.key + '-hours')?.value || 0);
+            const load = parseFloat(document.getElementById('ws-' + d.key + '-load')?.value || 0) / 100;
+            
+            const dailyKwh = count * power * hours * load;
+            annualKwh += dailyKwh;
+            processData.push({ name: d.name, kwh: dailyKwh });
+        }
+    });
+    
+    // ========== 读取 Step 2 的运行数据 ==========
+    const days = parseInt(document.getElementById('ws-days')?.value || 300);
+    const output = parseInt(document.getElementById('ws-output')?.value || 1200);
+    const factorSelect = document.querySelector('#workspace-step-2 select');
+    const factor = factorSelect ? parseFloat(factorSelect.value) : 0.5708;
+    
+    // ========== 计算结果 ==========
+    const totalKwh = annualKwh * days;
+    const totalCo2 = totalKwh * factor / 1000; // 吨CO₂e
+    const intensity = output > 0 ? (totalCo2 / output).toFixed(2) : 0;
+    
+    // 评级
+    let rating = 'B';
+    if (intensity < 2.5) rating = 'AAA';
+    else if (intensity < 3.0) rating = 'AA';
+    else if (intensity < 3.5) rating = 'A';
+    else if (intensity < 4.5) rating = 'BB';
+    
+    // ========== 写入 Step 3 的 DOM ==========
+    document.getElementById('result-total').textContent = Math.round(totalCo2).toLocaleString();
+    document.getElementById('result-intensity').textContent = intensity;
+    document.getElementById('result-rating').textContent = rating;
+    
+    const ratingDesc = { 'AAA': '行业前5%', 'AA': '行业前15%', 'A': '行业前35%', 'BB': '行业平均', 'B': '待改进' };
+    document.getElementById('result-rating-desc').textContent = ratingDesc[rating];
+    
+    // ========== 生成图表数据并渲染 ==========
+    const categories = processData.map(p => p.name);
+    const enterprise = processData.map(p => Math.round(p.kwh * days * factor / 1000));
+    const total = enterprise.reduce((a, b) => a + b, 0);
+    
+    // 添加"合计"
+    categories.push('合计');
+    enterprise.push(total);
+    
+    // 行业对比（固定比例）
+    const industryAvg = enterprise.map(v => Math.round(v * 1.15));
+    const industryBest = enterprise.map(v => Math.round(v * 0.75));
+    
+    // 渲染图表
+    renderResultChart(categories, enterprise, industryAvg, industryBest);
+    
+    // 进入 Step 3
+    goStep(3);
+}
+
+function renderResultChart(categories, enterprise, industryAvg, industryBest) {
+    const chart = echarts.init(document.getElementById('ws-result-chart'));
+    chart.setOption({
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['本企业', '行业平均', '行业先进'], textStyle: { color: '#fff' }, top: 0 },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+        xAxis: {
+            type: 'category',
+            data: categories,
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+            axisLabel: { color: '#fff' }
+        },
+        yAxis: {
+            type: 'value',
+            name: '碳排放(tCO₂e)',
+            nameTextStyle: { color: '#fff' },
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+            axisLabel: { color: '#fff' },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+        },
+        series: [
+            { name: '本企业', type: 'bar', data: enterprise, itemStyle: { color: '#00D4AA' }, barGap: '10%' },
+            { name: '行业平均', type: 'bar', data: industryAvg, itemStyle: { color: '#F9CA24' } },
+            { name: '行业先进', type: 'bar', data: industryBest, itemStyle: { color: '#4ECDC4' } }
+        ]
+    });
+}
 
     </script>
 </body>
