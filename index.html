@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>碳智评 CarbonWise - 纺织业绿色金融SaaS平台</title>
+    <meta name="description" content="基于参数化反演与环境成本会计的纺织业绿色金融SaaS平台，让每一吨减排量都成为可融资的资产">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        carbon: {
+                            900: '#0a0e1a',
+                            800: '#0f1729',
+                            700: '#1a2332',
+                            accent: '#00d4aa',
+                            'accent-light': '#5eead4',
+                            'accent-dark': '#059669',
+                            eco: '#f0fdf4',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans SC', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --tech-accent: #00d4aa;
+            --tech-glow: rgba(0, 212, 170, 0.3);
+            --carbon-dark: #0a0e1a;
+        }
+
+        * { font-family: 'Noto Sans SC', system-ui, sans-serif; }
+
+        /* 粒子画布 */
+        #particle-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        /* 玻璃态 */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-dark {
+            background: rgba(15, 23, 41, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 170, 0.15);
+        }
+        .glass-eco {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+        }
+
+        /* 发光 */
+        .glow-text {
+            text-shadow: 0 0 20px var(--tech-glow), 0 0 40px var(--tech-glow);
+        }
+        .glow-box {
+            box-shadow: 0 0 30px rgba(0, 212, 170, 0.15), 0 0 60px rgba(0, 212, 170, 0.05);
+        }
+
+        /* 渐变边框 */
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, rgba(0,212,170,0.1), rgba(5,150,105,0.1));
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1.5px;
+            background: linear-gradient(135deg, var(--tech-accent), #059669);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        /* 动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .float-anim { animation: float 6s ease-in-out infinite; }
+        .float-anim-delay { animation: float 6s ease-in-out 2s infinite; }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid var(--tech-accent);
+            animation: pulse-ring 2s ease-out infinite;
+        }
+
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        @keyframes blink {
+            50% { border-color: transparent; }
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--carbon-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--tech-accent); border-radius: 4px; }
+
+        /* 标签 */
+        .tag-tech {
+            background: linear-gradient(135deg, rgba(0,212,170,0.2), rgba(0,212,170,0.05));
+            border: 1px solid rgba(0,212,170,0.3);
+            color: #00d4aa;
+        }
+
+        /* 悬停 */
+        .hover-lift {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 212, 170, 0.15);
+        }
+
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+
+        /* 流程线 */
+        .flow-line {
+            background: linear-gradient(to bottom, var(--tech-accent), #059669);
+        }
+
+        /* 图表 */
+        .echarts-container {
+            width: 100%;
+            height: 400px;
+        }
+        @media (max-width: 768px) {
+            .echarts-container { height: 300px; }
+        }
+
+        /* 导航 */
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(10, 14, 26, 0.95);
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--tech-accent);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 100%;
+        }
+
+        /* 按钮 */
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-glow::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(0,212,170,0.3) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .btn-glow:hover::after { opacity: 1; }
+
+        /* 网格背景 */
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* 移动端菜单 */
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        /* 打字机效果 */
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid var(--tech-accent);
+            white-space: nowrap;
+            animation: typewriter 3s steps(20) 1s forwards, blink 0.75s step-end infinite;
+            width: 0;
+        }
+
+        /* 页面切换 */
+        .page-section {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .page-section.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 表格样式 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 212, 170, 0.1);
+        }
+        .data-table th {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--tech-accent);
+            font-weight: 600;
+        }
+        .data-table tr:hover {
+            background: rgba(0, 212, 170, 0.05);
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            height: 8px;
+            background: rgba(0, 212, 170, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--tech-accent), #059669);
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+
+        /* 卡片选中态 */
+        .pricing-card {
+            transition: all 0.4s ease;
+            border: 2px solid transparent;
+        }
+        .pricing-card:hover {
+            border-color: rgba(0, 212, 170, 0.3);
+        }
+        .pricing-card.popular {
+            border-color: var(--tech-accent);
+            position: relative;
+        }
+        .pricing-card.popular::before {
+            content: '最受欢迎';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--tech-accent);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* 评价卡片 */
+        .testimonial-card {
+            background: linear-gradient(135deg, rgba(0,212,170,0.05), rgba(5,150,105,0.05));
+            border: 1px solid rgba(0, 212, 170, 0.15);
+        }
+
+        /* Logo墙 */
+        .logo-wall img {
+            filter: grayscale(100%) opacity(0.6);
+            transition: all 0.3s ease;
+        }
+        .logo-wall img:hover {
+            filter: grayscale(0%) opacity(1);
+        }
+
+        /* 统计数字 */
+        .stat-number {
+            background: linear-gradient(135deg, #00d4aa, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden bg-carbon-900">
+
+    <!-- 导航栏 -->
+    <nav id="navbar" class="fixed top-0 w-full z-50 transition-all duration-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="#" onclick="showPage('home')" class="flex items-center space-x-2 group">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
+                        </svg>
+                    </div>
+                    <span class="text-white font-bold text-xl tracking-tight">碳智评 <span class="text-emerald-400 font-light">CarbonWise</span></span>
+                </a>
+
+                <!-- Desktop Nav -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" onclick="showPage('home')" class="nav-link text-gray-300 hover:text-emerald-400 transition text-sm">首页</a>
+                    <a href="#" onclick="showPage('case')" class="nav-link text-gray-300 hover:text-emerald-400 transition text-sm">客户案例</a>
+                    <a href="#" onclick="showPage('pricing')" class="nav-link text-gray-300 hover:text-emerald-400 transition text-sm">定价</a>
+                    <a href="#solution" onclick="showPage('home'); setTimeout(()=>scrollToSection('solution'), 100)" class="nav-link text-gray-300 hover:text-emerald-400 transition text-sm">产品</a>
+                    <a href="#" onclick="showPage('home'); setTimeout(()=>scrollToSection('contact'), 100)" class="nav-link text-gray-300 hover:text-emerald-400 transition text-sm">联系我们</a>
+                </div>
+
+                <!-- CTA Buttons -->
+                <div class="hidden md:flex items-center space-x-3">
+                    <button onclick="showPage('pricing')" class="text-emerald-400 text-sm font-medium hover:text-emerald-300 transition">登录</button>
+                    <button onclick="showPage('pricing')" class="btn-glow px-5 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-medium hover:shadow-lg hover:shadow-emerald-500/30 transition">
+                        免费试用
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="md:hidden text-white p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="mobile-menu fixed top-0 right-0 w-80 h-full bg-carbon-800 z-50 p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-8">
+                <span class="text-white font-bold">菜单</span>
+                <button id="close-menu" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <a href="#" onclick="showPage('home'); closeMobileMenu()" class="block text-gray-300 hover:text-emerald-400 py-2 border-b border-gray-700">首页</a>
+                <a href="#" onclick="showPage('case'); closeMobileMenu()" class="block text-gray-300 hover:text-emerald-400 py-2 border-b border-gray-700">客户案例</a>
+                <a href="#" onclick="showPage('pricing'); closeMobileMenu()" class="block text-gray-300 hover:text-emerald-400 py-2 border-b border-gray-700">定价</a>
+                <a href="#" onclick="showPage('home'); closeMobileMenu(); setTimeout(()=>scrollToSection('solution'), 100)" class="block text-gray-300 hover:text-emerald-400 py-2 border-b border-gray-700">产品功能</a>
+                <a href="#" onclick="showPage('home'); closeMobileMenu(); setTimeout(()=>scrollToSection('contact'), 100)" class="block text-gray-300 hover:text-emerald-400 py-2 border-b border-gray-700">联系我们</a>
+            </div>
+            <div class="mt-8 space-y-3">
+                <button class="w-full py-3 rounded-full border border-emerald-500 text-emerald-400 font-medium">登录</button>
+                <button class="w-full py-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium">免费试用</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== 首页 ==================== -->
+    <div id="page-home" class="page-section active">
+
+        <!-- Hero 区域 - 深色科技风 -->
+        <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <canvas id="particle-canvas"></canvas>
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl float-anim"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl float-anim-delay"></div>
+            <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-emerald-400/5 rounded-full blur-3xl float-anim" style="animation-delay: 4s;"></div>
+
+            <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div class="mb-6">
+                    <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium tag-tech">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+                        中国国际大学生创新大赛 2026 · 真理之下团队
+                    </span>
+                </div>
+
+                <h1 class="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
+                    <span class="block">让每一吨减排量</span>
+                    <span class="block mt-2 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 bg-clip-text text-transparent glow-text typewriter" style="display: inline-block;">
+                        都成为可融资的资产
+                    </span>
+                </h1>
+
+                <p class="text-xl md:text-2xl text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
+                    基于参数化反演与环境成本会计的<br class="hidden md:block">
+                    <span class="text-emerald-400 font-semibold">纺织业绿色金融SaaS平台</span>
+                </p>
+
+                <!-- 核心数据指标 -->
+                <div class="flex flex-wrap justify-center gap-4 mb-10">
+                    <div class="glass rounded-2xl px-6 py-4 text-center min-w-[140px]">
+                        <div class="text-3xl font-bold stat-number counter" data-target="98">0</div>
+                        <div class="text-xs text-gray-400 mt-1">成本降幅 %</div>
+                    </div>
+                    <div class="glass rounded-2xl px-6 py-4 text-center min-w-[140px]">
+                        <div class="text-3xl font-bold stat-number counter" data-target="95">0</div>
+                        <div class="text-xs text-gray-400 mt-1">周期缩短 %</div>
+                    </div>
+                    <div class="glass rounded-2xl px-6 py-4 text-center min-w-[140px]">
+                        <div class="text-3xl font-bold stat-number counter" data-target="3600">0</div>
+                        <div class="text-xs text-gray-400 mt-1">元/年 定价</div>
+                    </div>
+                    <div class="glass rounded-2xl px-6 py-4 text-center min-w-[140px]">
+                        <div class="text-3xl font-bold stat-number counter" data-target="3">0</div>
+                        <div class="text-xs text-gray-400 mt-1">分钟完成核算</div>
+                    </div>
+                </div>
+
+                <!-- CTA 按钮组 -->
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button onclick="showPage('pricing')" class="btn-glow px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-lg hover:shadow-xl hover:shadow-emerald-500/30 transition transform hover:scale-105 flex items-center justify-center gap-2">
+                        <span>免费开始使用</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </button>
+                    <button onclick="showPage('case')" class="px-8 py-4 rounded-full border border-emerald-500/50 text-emerald-400 font-semibold text-lg hover:bg-emerald-500/10 transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>观看演示</span>
+                    </button>
+                </div>
+
+                <!-- 信任背书 -->
+                <div class="mt-12 pt-8 border-t border-gray-800">
+                    <p class="text-gray-500 text-sm mb-4">对标行业标准与合作意向机构</p>
+                    <div class="flex flex-wrap justify-center items-center gap-8 opacity-60">
+                        <div class="flex items-center gap-2 text-gray-400">
+                            <i class="fas fa-university text-xl"></i>
+                            <span class="text-sm">中南财经政法大学信息工程学院</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-400">
+                            <i class="fas fa-university text-xl"></i>
+                            <span class="text-sm">中南财经政法大学金融学院</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-400">
+                            <i class="fas fa-industry text-xl"></i>
+                            <span class="text-sm">中国纺织工业联合会（行业标准参考）</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-400">
+                            <i class="fas fa-leaf text-xl"></i>
+                            <span class="text-sm">湖州绿色金融改革创新试验区（政策对标）</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                </svg>
+            </div>
+        </section>
+
+        <!-- 核心痛点 - 深色过渡 -->
+        <section id="painpoints" class="relative py-24" style="background: linear-gradient(180deg, #0a1f1a 0%, #0f1729 100%);">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <span class="text-emerald-400 text-sm font-semibold tracking-wider uppercase">Pain Points</span>
+                    <h2 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">四大结构性痛点</h2>
+                    <p class="text-gray-400 text-lg max-w-2xl mx-auto">中国纺织业中小企业碳管理的深层困境，每一个痛点背后都是巨大的市场机会</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group cursor-pointer" onclick="showPainDetail(0)">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <svg class="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">算不准</h3>
+                        <div class="text-3xl font-black text-red-400 mb-2">32%</div>
+                        <p class="text-gray-400 text-sm">人工估算误差高达32%，缺乏专业核算人员与标准化工具</p>
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <span class="text-xs text-gray-500">案例：浙江某纺织厂人工估算3.1 tCO₂e，SGS核查2.1 tCO₂e</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group cursor-pointer" onclick="showPainDetail(1)">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <svg class="w-7 h-7 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">看不见</h3>
+                        <div class="text-3xl font-black text-yellow-400 mb-2">15%</div>
+                        <p class="text-gray-400 text-sm">隐性环境成本在传统财务报表中完全不可见</p>
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <span class="text-xs text-gray-500">空压机余热损失占电费15%，年浪费14.4万元</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group cursor-pointer" onclick="showPainDetail(2)">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">比不了</h3>
+                        <div class="text-3xl font-black text-blue-400 mb-2">0</div>
+                        <p class="text-gray-400 text-sm">孤立数据无行业对标，无法判断自身碳效水平</p>
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <span class="text-xs text-gray-500">行业平均回收率40%，多数企业仅30%</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group cursor-pointer" onclick="showPainDetail(3)">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">贷不到</h3>
+                        <div class="text-3xl font-black text-purple-400 mb-2">3万</div>
+                        <p class="text-gray-400 text-sm">银行单户尽调成本3万元，中小企业被系统性排斥</p>
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <span class="text-xs text-gray-500">绿色信贷余额30万亿，纺织中小企业获得率不足3%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 痛点流程图 -->
+                <div class="glass-dark rounded-3xl p-8">
+                    <div class="flex flex-wrap justify-center items-center gap-4">
+                        <div class="glass rounded-xl px-6 py-3 text-red-400 font-semibold flex items-center gap-2">
+                            <i class="fas fa-calculator"></i>
+                            <span>算不准</span>
+                        </div>
+                        <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                        <div class="glass rounded-xl px-6 py-3 text-yellow-400 font-semibold flex items-center gap-2">
+                            <i class="fas fa-eye-slash"></i>
+                            <span>看不见</span>
+                        </div>
+                        <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                        <div class="glass rounded-xl px-6 py-3 text-blue-400 font-semibold flex items-center gap-2">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>比不了</span>
+                        </div>
+                        <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                        <div class="glass rounded-xl px-6 py-3 text-purple-400 font-semibold flex items-center gap-2">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            <span>贷不到</span>
+                        </div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-gray-400 text-sm">因为<span class="text-red-400">算不准</span>，所以<span class="text-yellow-400">看不见</span>；因为<span class="text-yellow-400">看不见</span>，所以<span class="text-blue-400">比不了</span>；因为<span class="text-blue-400">比不了</span>，所以<span class="text-purple-400">贷不到</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 解决方案 - 深色科技风 -->
+        <section id="solution" class="relative py-24 grid-bg" style="background: #0f1729;">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <span class="text-emerald-400 text-sm font-semibold tracking-wider uppercase">Core Solution</span>
+                    <h2 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">碳智评解决方案</h2>
+                    <p class="text-gray-400 text-lg max-w-2xl mx-auto">一个平台 · 两套算法 · 三类客户 · 四层价值</p>
+                </div>
+
+                <!-- 技术架构图 -->
+                <div class="mb-20">
+                    <div class="glass-dark rounded-3xl p-8 md:p-12 glow-box">
+                        <h3 class="text-2xl font-bold text-white mb-8 text-center">三层架构 + 双核引擎</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="relative">
+                                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-emerald-500 rounded-full text-xs text-white font-bold z-10">应用层</div>
+                                <div class="gradient-border rounded-2xl p-6 pt-8 h-full">
+                                    <div class="space-y-4">
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center"><i class="fab fa-react text-blue-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">React 前端交互</div><div class="text-gray-500 text-xs">可视化仪表盘</div></div>
+                                        </div>
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center"><i class="fab fa-python text-green-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">Flask 后端服务</div><div class="text-gray-500 text-xs">RESTful API</div></div>
+                                        </div>
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center"><i class="fas fa-database text-orange-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">MySQL 数据存储</div><div class="text-gray-500 text-xs">企业级安全</div></div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-700">
+                                        <p class="text-xs text-emerald-400 text-center">一键建模向导 / 多标准报告 / API接口</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="relative">
+                                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-teal-500 rounded-full text-xs text-white font-bold z-10">算法层</div>
+                                <div class="gradient-border rounded-2xl p-6 pt-8 h-full">
+                                    <div class="space-y-4">
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center"><i class="fas fa-microchip text-purple-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">C++17 高性能引擎</div><div class="text-gray-500 text-xs">10万次循环&lt;1秒</div></div>
+                                        </div>
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center"><i class="fab fa-python text-yellow-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">Python 数据处理</div><div class="text-gray-500 text-xs">Pandas / NumPy</div></div>
+                                        </div>
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center"><i class="fas fa-random text-pink-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">蒙特卡洛模拟</div><div class="text-gray-500 text-xs">不确定性分析</div></div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-700">
+                                        <p class="text-xs text-emerald-400 text-center">参数化反演 / DEA评级 / 碳效计算</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="relative">
+                                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-cyan-500 rounded-full text-xs text-white font-bold z-10">数据层</div>
+                                <div class="gradient-border rounded-2xl p-6 pt-8 h-full">
+                                    <div class="space-y-4">
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center"><i class="fas fa-leaf text-emerald-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">CLCD 授权数据库</div><div class="text-gray-500 text-xs">中国本土化因子</div></div>
+                                        </div>
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center"><i class="fas fa-globe text-teal-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">生态环境部因子</div><div class="text-gray-500 text-xs">官方权威数据</div></div>
+                                        </div>
+                                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                                            <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center"><i class="fas fa-cogs text-cyan-400"></i></div>
+                                            <div><div class="text-gray-200 text-sm font-medium">自研本土化因子库</div><div class="text-gray-500 text-xs">纺织专用参数</div></div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-700">
+                                        <p class="text-xs text-emerald-400 text-center">季度更新 / 交叉验证 / 溯源管理</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 核心功能模块 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <i class="fas fa-calculator text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">智能核算引擎</h3>
+                        <p class="text-gray-400 text-sm mb-3">基于设备参数反推碳排放，无需IoT硬件，3分钟完成全厂核算</p>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">误差&lt;1%</span>
+                            <span class="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">SGS验证</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 99%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">核算精度 99%</div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <i class="fas fa-chart-line text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">蒙特卡洛不确定性</h3>
+                        <p class="text-gray-400 text-sm mb-3">10,000次随机抽样，量化核算结果置信区间，提升银行可信度</p>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400">90%置信度</span>
+                            <span class="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400">0.5秒完成</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 90%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">置信水平 90%</div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <i class="fas fa-coins text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">环境成本穿透</h3>
+                        <p class="text-gray-400 text-sm mb-3">碳-财双维映射，将碳排放转化为财务语言，定位浪费源头</p>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">设备级分摊</span>
+                            <span class="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">实时计算</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 85%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">成本识别率 85%</div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <i class="fas fa-award text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">碳效评级对接</h3>
+                        <p class="text-gray-400 text-sm mb-3">AAA-BB五级评级，AA级以上直通银行绿色信贷白名单</p>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">银行采信</span>
+                            <span class="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">自动审批</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 95%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">银行通过率 95%</div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <i class="fas fa-bolt text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">DEA效率优化</h3>
+                        <p class="text-gray-400 text-sm mb-3">非期望产出SBM-DEA模型，自动生成12类技改方案与投资回报</p>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400">回收期1.3年</span>
+                            <span class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400">12类方案</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 88%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">效率提升潜力 28%</div>
+                    </div>
+
+                    <div class="glass-dark rounded-2xl p-6 hover-lift group">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                            <i class="fas fa-file-alt text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">多标准报告</h3>
+                        <p class="text-gray-400 text-sm mb-3">ISO 14067 / PAS 2050 / CBAM / 银行评估，一键生成</p>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs px-2 py-1 rounded bg-indigo-500/20 text-indigo-400">3分钟生成</span>
+                            <span class="text-xs px-2 py-1 rounded bg-indigo-500/20 text-indigo-400">双语支持</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 100%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">标准覆盖率 100%</div>
+                    </div>
+                </div>
+
+                <!-- 产品界面预览 -->
+                <div class="glass-dark rounded-3xl p-8 overflow-hidden glow-box">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-white">产品界面预览</h3>
+                        <div class="flex gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-emerald-500/50 transition">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm text-gray-400 flex items-center gap-2"><i class="fas fa-project-diagram text-emerald-400"></i> 碳排放流向分析</span>
+                                    <span class="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">实时</span>
+                                </div>
+                                <div class="h-48" id="chart-sankey"></div>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-blue-500/50 transition">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm text-gray-400 flex items-center gap-2"><i class="fas fa-bullseye text-blue-400"></i> 碳效六维评分</span>
+                                    <span class="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400">AA级</span>
+                                </div>
+                                <div class="h-48" id="chart-radar"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-purple-500/50 transition">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm text-gray-400 flex items-center gap-2"><i class="fas fa-chart-bar text-purple-400"></i> 行业对标趋势</span>
+                                    <span class="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">月度</span>
+                                </div>
+                                <div class="h-48" id="chart-trend"></div>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-yellow-500/50 transition">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm text-gray-400 flex items-center gap-2"><i class="fas fa-tools text-yellow-400"></i> 技改方案ROI</span>
+                                    <span class="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">推荐</span>
+                                </div>
+                                <div class="h-48" id="chart-roi"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 客户案例预览 - 过渡区域 -->
+        <section class="relative py-24" style="background: linear-gradient(180deg, #0f1729 0%, #0a1f1a 30%, #f0fdf4 100%);">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <span class="text-emerald-600 text-sm font-semibold tracking-wider uppercase">Success Story</span>
+                    <h2 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">蓝天纺织 · 虚拟企业验证案例</h2>
+                    <p class="text-gray-600 text-lg max-w-2xl mx-auto">年产涤纶布1,200吨，通过碳智评系统实现精准核算与优化</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                    <div class="bg-white rounded-3xl shadow-xl p-8">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                            <i class="fas fa-check-circle text-emerald-500"></i>
+                            核算结果对比
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+                                <div>
+                                    <div class="text-sm text-gray-600">传统人工估算</div>
+                                    <div class="text-xs text-gray-400">内部估算，45天</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-gray-700">4,200吨</div>
+                                    <div class="text-xs text-red-500">误差 +32%</div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                                <div>
+                                    <div class="text-sm text-gray-900 font-medium">碳智评系统</div>
+                                    <div class="text-xs text-gray-500">参数化反演，3天</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-emerald-600">3,610吨</div>
+                                    <div class="text-xs text-emerald-600">误差仅0.8%</div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                <div>
+                                    <div class="text-sm text-gray-900 font-medium">SGS第三方核查</div>
+                                    <div class="text-xs text-gray-500">国际标准，60天</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-blue-600">3,580吨</div>
+                                    <div class="text-xs text-blue-600">基准值</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 p-4 bg-gray-50 rounded-xl">
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-600">系统 vs SGS 偏差</span>
+                                <span class="text-emerald-600 font-bold">0.8%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" style="width: 0.8%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-xl p-8">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                            <i class="fas fa-lightbulb text-yellow-500"></i>
+                            系统生成的优化方案
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-bold">1</div>
+                                    <div>
+                                        <div class="text-sm font-medium">空压机余热回收</div>
+                                        <div class="text-xs text-gray-500">投资15万 · 年节能12万</div>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-bold text-emerald-600">1.25年回本</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">2</div>
+                                    <div>
+                                        <div class="text-sm font-medium">定型机废气热回收</div>
+                                        <div class="text-xs text-gray-500">投资20万 · 年节能15万</div>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-bold text-blue-600">1.33年回本</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-bold">3</div>
+                                    <div>
+                                        <div class="text-sm font-medium">LED照明全厂改造</div>
+                                        <div class="text-xs text-gray-500">投资5万 · 年节能3.6万</div>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-bold text-purple-600">1.39年回本</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="text-sm text-gray-600">三项合计投资</div>
+                                    <div class="text-xs text-gray-500">可申请补贴65万</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-black text-emerald-600">40万</div>
+                                    <div class="text-xs text-emerald-600">年节能30.6万</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button onclick="showPage('case')" class="px-8 py-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg hover:shadow-emerald-500/30 transition inline-flex items-center gap-2">
+                        <span>查看完整案例</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 市场分析 - 清新环保风 -->
+        <section id="market" class="eco-section py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <span class="text-emerald-600 text-sm font-semibold tracking-wider uppercase">Market Analysis</span>
+                    <h2 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">市场规模与机遇</h2>
+                    <p class="text-gray-600 text-lg">政策、贸易、金融三重驱动，碳管理从"可选项"变为"必选项"</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+                    <div class="bg-white rounded-3xl shadow-xl p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">三层市场规模测算（亿元/年）</h3>
+                        <div class="echarts-container" id="chart-market"></div>
+                    </div>
+                    <div class="bg-white rounded-3xl shadow-xl p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">竞品功能对比矩阵</h3>
+                        <div class="echarts-container" id="chart-compare"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-lift">
+                        <div class="text-4xl font-black stat-number counter" data-target="30">0</div>
+                        <div class="text-sm text-gray-600 mt-1">万亿绿色信贷余额</div>
+                        <div class="text-xs text-gray-400 mt-1">2024年末数据</div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-lift">
+                        <div class="text-4xl font-black stat-number counter" data-target="40000">0</div>
+                        <div class="text-sm text-gray-600 mt-1">家纺织中小企业</div>
+                        <div class="text-xs text-gray-400 mt-1">年营收&lt;2亿元</div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-lift">
+                        <div class="text-4xl font-black stat-number counter" data-target="900">0</div>
+                        <div class="text-sm text-gray-600 mt-1">亿新增信贷空间</div>
+                        <div class="text-xs text-gray-400 mt-1">获得率3%→10%</div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-lift">
+                        <div class="text-4xl font-black stat-number counter" data-target="98">0</div>
+                        <div class="text-sm text-gray-600 mt-1">%成本降幅</div>
+                        <div class="text-xs text-gray-400 mt-1">vs 传统核查</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 客户评价 -->
+        <section class="eco-section py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <span class="text-emerald-600 text-sm font-semibold tracking-wider uppercase">Testimonials</span>
+                    <h2 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">客户与合作伙伴评价</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="testimonial-card rounded-2xl p-6 hover-lift">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white font-bold">张</div>
+                            <div>
+                                <div class="font-semibold text-gray-900">张总</div>
+                                <div class="text-sm text-gray-500">蓝天纺织 总经理</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm leading-relaxed">"以前年尾算总账，根本看不清哪台设备在浪费。用碳智评后，发现空压机余热损失占电费15%，改造后年省12万。最关键的是，凭AA级碳效评级拿到了银行200万绿色贷款。"</p>
+                        <div class="mt-4 flex items-center gap-1">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card rounded-2xl p-6 hover-lift">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-bold">李</div>
+                            <div>
+                                <div class="font-semibold text-gray-900">李经理</div>
+                                <div class="text-sm text-gray-500">绍兴农商行 绿色金融部</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm leading-relaxed">"纺织业中小企业尽调一直是个痛点，单户成本3万，贷款额度才200-500万，根本不划算。碳智评的标准化碳效报告把尽调成本降到500元，让我们敢做、能做、愿意做绿色信贷。"</p>
+                        <div class="mt-4 flex items-center gap-1">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card rounded-2xl p-6 hover-lift">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-600 flex items-center justify-center text-white font-bold">王</div>
+                            <div>
+                                <div class="font-semibold text-gray-900">王主任</div>
+                                <div class="text-sm text-gray-500">柯桥区经信局</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm leading-relaxed">"园区400多家企业，碳管理水平参差不齐。碳智评的园区版让我们一次性掌握全园区碳效底数，精准识别高耗能企业，政策扶持从'撒胡椒面'变成'精准滴灌'。"</p>
+                        <div class="mt-4 flex items-center gap-1">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star-half-alt text-yellow-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA 区域 -->
+        <section class="relative py-24" style="background: linear-gradient(135deg, #0a1f1a 0%, #0f1729 50%, #0a0e1a 100%);">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">准备好开启绿色转型了吗？</h2>
+                <p class="text-xl text-gray-400 mb-10">加入碳智评，让每一吨减排量都成为可融资的资产</p>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+                    <button onclick="showPage('pricing')" class="btn-glow px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-lg hover:shadow-xl hover:shadow-emerald-500/30 transition transform hover:scale-105 flex items-center justify-center gap-2">
+                        <span>免费开始使用</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                    </button>
+                    <button onclick="showPage('case')" class="px-8 py-4 rounded-full border border-emerald-500/50 text-emerald-400 font-semibold text-lg hover:bg-emerald-500/10 transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span>预约产品演示</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass rounded-2xl p-6">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-envelope text-emerald-400 text-xl"></i>
+                        </div>
+                        <div class="text-white font-semibold">five_cobblers@163.com</div>
+                    </div>
+                    <div class="glass rounded-2xl p-6">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-globe text-emerald-400 text-xl"></i>
+                        </div>
+                        <div class="text-white font-semibold">beneaththetruth-team.github.io/CarbonWise/</div>
+                    </div>
+                    <div class="glass rounded-2xl p-6">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-map-marker-alt text-emerald-400 text-xl"></i>
+                        </div>
+                        <div class="text-white font-semibold">中南财经政法大学</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ==================== 案例页 ==================== -->
+    <div id="page-case" class="page-section">
+        <section class="relative py-24 min-h-screen" style="background: linear-gradient(135deg, #0a0e1a 0%, #0f1729 50%, #0a1f1a 100%);">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+                <div class="mb-12">
+                    <button onclick="showPage('home')" class="text-gray-400 hover:text-emerald-400 transition flex items-center gap-2 mb-6">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        <span>返回首页</span>
+                    </button>
+                    <span class="text-emerald-400 text-sm font-semibold tracking-wider uppercase">Case Study</span>
+                    <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">蓝天纺织 · 完整验证案例</h1>
+                    <p class="text-gray-400 text-lg">虚拟企业验证案例，展示碳智评系统从核算到优化的完整闭环</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- 企业信息 -->
+                    <div class="lg:col-span-1">
+                        <div class="glass-dark rounded-2xl p-6 mb-6">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-building text-emerald-400"></i>
+                                企业档案
+                            </h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-400">企业名称</span><span class="text-white">浙江蓝天纺织有限公司</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">注册地址</span><span class="text-white">绍兴市柯桥区</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">成立日期</span><span class="text-white">2015年3月</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">注册资本</span><span class="text-white">800万元</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">员工人数</span><span class="text-white">120人</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">年营收</span><span class="text-white">4,800万元</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">主要产品</span><span class="text-white">涤纶染色布</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">年产量</span><span class="text-white">1,200吨</span></div>
+                            </div>
+                        </div>
+
+                        <div class="glass-dark rounded-2xl p-6">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-cogs text-blue-400"></i>
+                                设备清单
+                            </h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between items-center p-2 rounded bg-white/5"><span class="text-gray-300">细纱机</span><span class="text-emerald-400">20台</span></div>
+                                <div class="flex justify-between items-center p-2 rounded bg-white/5"><span class="text-gray-300">浆纱机</span><span class="text-emerald-400">2台</span></div>
+                                <div class="flex justify-between items-center p-2 rounded bg-white/5"><span class="text-gray-300">喷气织机</span><span class="text-emerald-400">80台</span></div>
+                                <div class="flex justify-between items-center p-2 rounded bg-white/5"><span class="text-gray-300">溢流染色机</span><span class="text-emerald-400">6台</span></div>
+                                <div class="flex justify-between items-center p-2 rounded bg-white/5"><span class="text-gray-300">空压机</span><span class="text-emerald-400">4台</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 核算结果 -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="glass-dark rounded-2xl p-6">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-chart-pie text-emerald-400"></i>
+                                碳排放核算明细
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="data-table text-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>工序</th>
+                                            <th>设备</th>
+                                            <th>数量</th>
+                                            <th>功率(kW)</th>
+                                            <th>日耗电(kWh)</th>
+                                            <th>日碳排放(kg)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-300">
+                                        <tr><td>纺纱</td><td>细纱机</td><td>20</td><td>45</td><td>18,360</td><td>10,480</td></tr>
+                                        <tr><td>织造前</td><td>浆纱机</td><td>2</td><td>120</td><td>3,888</td><td>2,219</td></tr>
+                                        <tr><td>织造</td><td>喷气织机</td><td>80</td><td>3.5</td><td>6,384</td><td>3,644</td></tr>
+                                        <tr><td>印染</td><td>溢流染色机</td><td>6</td><td>90</td><td>6,912</td><td>3,945</td></tr>
+                                        <tr><td>辅助</td><td>空压机</td><td>4</td><td>75</td><td>4,320</td><td>2,466</td></tr>
+                                        <tr class="bg-emerald-500/10">
+                                            <td colspan="4" class="text-emerald-400 font-bold">合计</td>
+                                            <td class="text-emerald-400 font-bold">39,864</td>
+                                            <td class="text-emerald-400 font-bold">22,754</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="glass-dark rounded-2xl p-6">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-balance-scale text-yellow-400"></i>
+                                核算结果对比验证
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                                    <div class="text-sm text-gray-400 mb-1">传统人工估算</div>
+                                    <div class="text-2xl font-bold text-gray-300">4,200吨</div>
+                                    <div class="text-xs text-red-400 mt-1">误差 +32%</div>
+                                </div>
+                                <div class="bg-emerald-500/10 rounded-xl p-4 text-center border border-emerald-500/30">
+                                    <div class="text-sm text-emerald-400 mb-1">碳智评系统</div>
+                                    <div class="text-2xl font-bold text-emerald-400">3,610吨</div>
+                                    <div class="text-xs text-emerald-400 mt-1">误差仅0.8%</div>
+                                </div>
+                                <div class="bg-blue-500/10 rounded-xl p-4 text-center border border-blue-500/30">
+                                    <div class="text-sm text-blue-400 mb-1">SGS第三方核查</div>
+                                    <div class="text-2xl font-bold text-blue-400">3,580吨</div>
+                                    <div class="text-xs text-blue-400 mt-1">基准值</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-dark rounded-2xl p-6">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-wrench text-purple-400"></i>
+                                系统生成的技改优化方案
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="data-table text-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>优先级</th>
+                                            <th>技改措施</th>
+                                            <th>投资(万)</th>
+                                            <th>年节能(万)</th>
+                                            <th>年减碳(吨)</th>
+                                            <th>回收期</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-300">
+                                        <tr><td><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">1</span></td><td>空压机余热回收改造</td><td>15.0</td><td>12.0</td><td>145</td><td class="text-emerald-400">1.25年</td></tr>
+                                        <tr><td><span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">2</span></td><td>定型机废气热回收</td><td>20.0</td><td>15.0</td><td>180</td><td class="text-blue-400">1.33年</td></tr>
+                                        <tr><td><span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">3</span></td><td>LED照明全厂改造</td><td>5.0</td><td>3.6</td><td>43</td><td class="text-purple-400">1.39年</td></tr>
+                                        <tr><td><span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">4</span></td><td>细纱机变频改造</td><td>30.0</td><td>18.0</td><td>216</td><td class="text-yellow-400">1.67年</td></tr>
+                                        <tr><td><span class="px-2 py-1 bg-pink-500/20 text-pink-400 rounded text-xs">5</span></td><td>分布式光伏(屋顶2MW)</td><td>80.0</td><td>45.0</td><td>540</td><td class="text-pink-400">1.78年</td></tr>
+                                        <tr class="bg-emerald-500/10">
+                                            <td colspan="2" class="text-emerald-400 font-bold">合计</td>
+                                            <td class="text-emerald-400 font-bold">150.0</td>
+                                            <td class="text-emerald-400 font-bold">93.6</td>
+                                            <td class="text-emerald-400 font-bold">1,124</td>
+                                            <td class="text-emerald-400 font-bold">1.60年</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="glass-dark rounded-2xl p-6">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-hand-holding-usd text-yellow-400"></i>
+                                绿色信贷匹配结果
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-3">
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">预授信银行</span><span class="text-white">绍兴农村商业银行</span></div>
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">信贷产品</span><span class="text-white">"绿色智造贷"</span></div>
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">预授信额度</span><span class="text-emerald-400 font-bold">200万元</span></div>
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">贷款期限</span><span class="text-white">3年</span></div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">利率方案</span><span class="text-emerald-400 font-bold">LPR-20BP (3.65%)</span></div>
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">较普通贷款优惠</span><span class="text-emerald-400">45BP</span></div>
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">年省利息</span><span class="text-emerald-400 font-bold">0.9万元</span></div>
+                                    <div class="flex justify-between p-3 bg-white/5 rounded-lg"><span class="text-gray-300">担保方式</span><span class="text-white">信用+碳效评级质押</span></div>
+                                </div>
+                            </div>
+                            <div class="mt-4 p-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl border border-emerald-500/30">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-info-circle text-emerald-400 text-xl"></i>
+                                    <div class="text-sm text-gray-300">
+                                        <span class="text-emerald-400 font-semibold">创新模式：</span>以企业碳效评级作为信用增级手段，AA级企业获得更优惠利率和更灵活担保条件
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ==================== 定价页 ==================== -->
+    <div id="page-pricing" class="page-section">
+        <section class="relative py-24 min-h-screen" style="background: linear-gradient(180deg, #0a0e1a 0%, #0f1729 30%, #f0fdf4 100%);">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+                <div class="mb-12">
+                    <button onclick="showPage('home')" class="text-gray-400 hover:text-emerald-400 transition flex items-center gap-2 mb-6">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        <span>返回首页</span>
+                    </button>
+                    <div class="text-center">
+                        <span class="text-emerald-400 text-sm font-semibold tracking-wider uppercase">Pricing</span>
+                        <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">三层收入模型</h1>
+                        <p class="text-gray-400 text-lg max-w-2xl mx-auto">渐进式变现，从SaaS入口到金融核心，满足不同阶段客户需求</p>
+                    </div>
+                </div>
+
+                <!-- SaaS 定价 -->
+                <div class="mb-16">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">第一层：SaaS订阅费 <span class="text-sm font-normal text-gray-500">（流量入口，占比30%）</span></h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="pricing-card bg-white rounded-3xl shadow-xl p-8">
+                            <div class="text-center mb-6">
+                                <div class="text-sm font-semibold text-gray-500 mb-2">基础版</div>
+                                <div class="text-5xl font-black text-gray-900">免费</div>
+                                <div class="text-sm text-gray-500 mt-1">永久免费</div>
+                            </div>
+                            <div class="space-y-3 mb-8">
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>单工序碳核算</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>基础报告导出</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>行业基准查询</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fas fa-times text-gray-300"></i><span>多标准报告</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fas fa-times text-gray-300"></i><span>环境成本分析</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fas fa-times text-gray-300"></i><span>碳效评级</span></div>
+                            </div>
+                            <button class="w-full py-3 rounded-full border-2 border-gray-200 text-gray-600 font-semibold hover:border-emerald-500 hover:text-emerald-600 transition">立即注册</button>
+                        </div>
+
+                        <div class="pricing-card popular bg-white rounded-3xl shadow-xl p-8">
+                            <div class="text-center mb-6">
+                                <div class="text-sm font-semibold text-emerald-600 mb-2">专业版</div>
+                                <div class="text-5xl font-black text-gray-900">¥3,600</div>
+                                <div class="text-sm text-gray-500 mt-1">元/年</div>
+                            </div>
+                            <div class="space-y-3 mb-8">
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>全厂碳核算</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>多标准报告 (ISO/CBAM)</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>环境成本穿透分析</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>碳效评级 (AAA-BB)</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>月度对标趋势</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fas fa-times text-gray-300"></i><span>API接口</span></div>
+                            </div>
+                            <button class="w-full py-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg hover:shadow-emerald-500/30 transition">开始试用</button>
+                        </div>
+
+                        <div class="pricing-card bg-white rounded-3xl shadow-xl p-8">
+                            <div class="text-center mb-6">
+                                <div class="text-sm font-semibold text-gray-500 mb-2">企业版</div>
+                                <div class="text-5xl font-black text-gray-900">¥18,000</div>
+                                <div class="text-sm text-gray-500 mt-1">元/年</div>
+                            </div>
+                            <div class="space-y-3 mb-8">
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>多工厂管理</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>API接口对接</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>定制因子库</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>专属客户成功经理</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>优先技术支持</span></div>
+                                <div class="flex items-center gap-2 text-sm text-gray-600"><i class="fas fa-check text-emerald-500"></i><span>私有化部署选项</span></div>
+                            </div>
+                            <button class="w-full py-3 rounded-full border-2 border-gray-200 text-gray-600 font-semibold hover:border-emerald-500 hover:text-emerald-600 transition">联系销售</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据服务定价 -->
+                <div class="mb-16">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">第二层：绿色金融数据服务 <span class="text-sm font-normal text-gray-500">（核心变现，占比50%）</span></h2>
+                    <div class="bg-white rounded-3xl shadow-xl p-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div class="text-center p-6 rounded-2xl bg-blue-50 border border-blue-200">
+                                <div class="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-file-alt text-blue-600 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-2">碳效评估报告</h3>
+                                <div class="text-3xl font-black text-blue-600 mb-2">¥5万</div>
+                                <div class="text-sm text-gray-500 mb-4">/份</div>
+                                <ul class="text-sm text-gray-600 space-y-2 text-left">
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-blue-500 text-xs"></i>全生命周期碳足迹</li>
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-blue-500 text-xs"></i>行业对标分析</li>
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-blue-500 text-xs"></i>碳效评级认定</li>
+                                </ul>
+                            </div>
+
+                            <div class="text-center p-6 rounded-2xl bg-emerald-50 border border-emerald-200">
+                                <div class="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-search-dollar text-emerald-600 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-2">绿色信贷尽调包</h3>
+                                <div class="text-3xl font-black text-emerald-600 mb-2">¥15万</div>
+                                <div class="text-sm text-gray-500 mb-4">/份</div>
+                                <ul class="text-sm text-gray-600 space-y-2 text-left">
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-emerald-500 text-xs"></i>碳数据核实</li>
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-emerald-500 text-xs"></i>减碳潜力评估</li>
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-emerald-500 text-xs"></i>贷后监测服务</li>
+                                </ul>
+                            </div>
+
+                            <div class="text-center p-6 rounded-2xl bg-purple-50 border border-purple-200">
+                                <div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-filter text-purple-600 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-2">批量筛选服务</h3>
+                                <div class="text-3xl font-black text-purple-600 mb-2">¥500</div>
+                                <div class="text-sm text-gray-500 mb-4">/家</div>
+                                <ul class="text-sm text-gray-600 space-y-2 text-left">
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-purple-500 text-xs"></i>AA级以上企业名单</li>
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-purple-500 text-xs"></i>批量碳效初筛</li>
+                                    <li class="flex items-center gap-2"><i class="fas fa-check text-purple-500 text-xs"></i>风险预警标识</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 咨询定价 -->
+                <div class="mb-16">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">第三层：供应链碳管理咨询 <span class="text-sm font-normal text-gray-500">（高利润延伸，占比20%）</span></h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 hover-lift">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+                                    <i class="fas fa-project-diagram text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">供应链碳排查</h3>
+                                    <div class="text-sm text-gray-500">核心供应商评估</div>
+                                </div>
+                            </div>
+                            <div class="text-3xl font-black text-orange-600 mb-2">¥30万</div>
+                            <div class="text-sm text-gray-500 mb-4">/项目</div>
+                            <p class="text-sm text-gray-600">为品牌商（Nike/Shein等）评估核心供应商碳效，生成供应链碳足迹地图</p>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-lg p-6 hover-lift">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center">
+                                    <i class="fas fa-certificate text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">低碳产品认证</h3>
+                                    <div class="text-sm text-gray-500">碳足迹+认证对接</div>
+                                </div>
+                            </div>
+                            <div class="text-3xl font-black text-pink-600 mb-2">¥5万</div>
+                            <div class="text-sm text-gray-500 mb-4">/SKU</div>
+                            <p class="text-sm text-gray-600">产品碳足迹核算、认证机构对接、碳标签设计，适配DPP要求</p>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-lg p-6 hover-lift">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center">
+                                    <i class="fas fa-globe-europe text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">碳关税应对规划</h3>
+                                    <div class="text-sm text-gray-500">CBAM合规路径</div>
+                                </div>
+                            </div>
+                            <div class="text-3xl font-black text-indigo-600 mb-2">¥50万</div>
+                            <div class="text-sm text-gray-500 mb-4">/项目</div>
+                            <p class="text-sm text-gray-600">CBAM合规路径设计、碳成本测算、申报文件准备，保障欧盟市场准入</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 单位经济模型 -->
+                <div class="bg-white rounded-3xl shadow-xl p-8">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">单位经济模型</h3>
+                    <div class="echarts-container" id="chart-unit-economy" style="height: 350px;"></div>
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <div class="text-sm text-gray-500">专业版SaaS</div>
+                            <div class="text-lg font-bold text-emerald-600">LTV/CAC = 3.6</div>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <div class="text-sm text-gray-500">数据服务(银行)</div>
+                            <div class="text-lg font-bold text-blue-600">LTV/CAC = 5.3</div>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <div class="text-sm text-gray-500">供应链咨询</div>
+                            <div class="text-lg font-bold text-purple-600">LTV/CAC = 8.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-carbon-900 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+                        </div>
+                        <span class="text-white font-bold">碳智评 <span class="text-emerald-400 font-light">CarbonWise</span></span>
+                    </div>
+                    <p class="text-gray-400 text-sm">打造中国纺织业的绿色数字底座，让每一吨减排量都成为可融资的资产。</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">产品</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-emerald-400 transition">智能核算</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">碳效评级</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">环境成本</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">DEA优化</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">资源</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-emerald-400 transition">客户案例</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">行业白皮书</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">API文档</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">帮助中心</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">公司</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-emerald-400 transition">关于我们</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">加入团队</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">联系我们</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">隐私政策</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <div class="text-gray-500 text-sm mb-4 md:mb-0">
+                    © 2026 碳智评 CarbonWise. 真理之下团队. 保留所有权利.
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-emerald-400 transition"><i class="fab fa-github text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-emerald-400 transition"><i class="fab fa-weixin text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-emerald-400 transition"><i class="fab fa-linkedin text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-emerald-400 transition"><i class="fas fa-envelope text-xl"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ==================== 粒子背景动画 ====================
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.speedY = Math.random() * 0.5 - 0.25;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(0, 212, 170, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 80; i++) {
+                particles.push(new Particle());
+            }
+        }
+        initParticles();
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            particles.forEach((a, i) => {
+                particles.slice(i + 1).forEach(b => {
+                    const dx = a.x - b.x;
+                    const dy = a.y - b.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 150) {
+                        ctx.strokeStyle = `rgba(0, 212, 170, ${0.1 * (1 - distance / 150)})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x, a.y);
+                        ctx.lineTo(b.x, b.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+            animationId = requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // ==================== 页面路由 ====================
+        function showPage(pageName) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // 显示目标页面
+            const targetPage = document.getElementById('page-' + pageName);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                window.scrollTo(0, 0);
+            }
+
+            // 更新导航高亮
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // 如果粒子动画在运行且不在首页，暂停以节省性能
+            if (pageName !== 'home') {
+                cancelAnimationFrame(animationId);
+            } else {
+                animateParticles();
+            }
+        }
+
+        // ==================== 导航栏滚动效果 ====================
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('nav-blur');
+            } else {
+                navbar.classList.remove('nav-blur');
+            }
+        });
+
+        // ==================== 平滑滚动 ====================
+        function scrollToSection(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // ==================== 移动端菜单 ====================
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMenuBtn = document.getElementById('close-menu');
+
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.add('open');
+            });
+        }
+
+        if (closeMenuBtn) {
+            closeMenuBtn.addEventListener('click', closeMobileMenu);
+        }
+
+        function closeMobileMenu() {
+            mobileMenu.classList.remove('open');
+        }
+
+        // ==================== 数字计数动画 ====================
+        const counters = document.querySelectorAll('.counter');
+        const observerOptions = { threshold: 0.5 };
+
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const counter = entry.target;
+                    const target = parseInt(counter.getAttribute('data-target'));
+                    const duration = 2000;
+                    const step = target / (duration / 16);
+                    let current = 0;
+
+                    const timer = setInterval(() => {
+                        current += step;
+                        if (current >= target) {
+                            counter.textContent = target.toLocaleString();
+                            clearInterval(timer);
+                        } else {
+                            counter.textContent = Math.floor(current).toLocaleString();
+                        }
+                    }, 16);
+
+                    counterObserver.unobserve(counter);
+                }
+            });
+        }, observerOptions);
+
+        counters.forEach(counter => counterObserver.observe(counter));
+
+        // ==================== GSAP 滚动动画 ====================
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.hover-lift').forEach((el, i) => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: 'top 85%',
+                    toggleActions: 'play none none reverse'
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.6,
+                delay: i * 0.1
+            });
+        });
+
+        // ==================== ECharts 图表 ====================
+
+        // 1. 桑基图
+        const sankeyChart = echarts.init(document.getElementById('chart-sankey'));
+        sankeyChart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'item', triggerOn: 'mousemove' },
+            series: [{
+                type: 'sankey',
+                layout: 'none',
+                emphasis: { focus: 'adjacency' },
+                data: [
+                    { name: '原棉种植', itemStyle: { color: '#8B4513' } },
+                    { name: '化纤生产', itemStyle: { color: '#FF6B6B' } },
+                    { name: '纺纱', itemStyle: { color: '#4ECDC4' } },
+                    { name: '织造', itemStyle: { color: '#45B7D1' } },
+                    { name: '印染整理', itemStyle: { color: '#F9CA24' } },
+                    { name: '后整理', itemStyle: { color: '#6C5CE7' } },
+                    { name: '运输销售', itemStyle: { color: '#A29BFE' } },
+                    { name: '总碳排放', itemStyle: { color: '#00D4AA' } }
+                ],
+                links: [
+                    { source: '原棉种植', target: '总碳排放', value: 450 },
+                    { source: '化纤生产', target: '总碳排放', value: 320 },
+                    { source: '纺纱', target: '总碳排放', value: 430 },
+                    { source: '织造', target: '总碳排放', value: 470 },
+                    { source: '印染整理', target: '总碳排放', value: 890 },
+                    { source: '后整理', target: '总碳排放', value: 210 },
+                    { source: '运输销售', target: '总碳排放', value: 120 }
+                ],
+                lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.4 },
+                label: { color: '#fff', fontSize: 10 }
+            }]
+        });
+
+        // 2. 雷达图
+        const radarChart = echarts.init(document.getElementById('chart-radar'));
+        radarChart.setOption({
+            backgroundColor: 'transparent',
+            radar: {
+                indicator: [
+                    { name: '能源效率', max: 100 },
+                    { name: '碳排放强度', max: 100 },
+                    { name: '废弃物回收', max: 100 },
+                    { name: '水资源利用', max: 100 },
+                    { name: '化学品管理', max: 100 },
+                    { name: '可再生能源', max: 100 }
+                ],
+                axisName: { color: '#fff', fontSize: 10 },
+                splitArea: { areaStyle: { color: ['rgba(0,212,170,0.05)', 'rgba(0,212,170,0.1)'] } },
+                axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+                splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+            },
+            series: [{
+                type: 'radar',
+                data: [{
+                    value: [85, 78, 65, 72, 80, 45],
+                    name: '蓝天纺织',
+                    areaStyle: { color: 'rgba(0,212,170,0.3)' },
+                    lineStyle: { color: '#00D4AA', width: 2 },
+                    itemStyle: { color: '#00D4AA' }
+                }, {
+                    value: [70, 65, 60, 68, 70, 40],
+                    name: '行业平均',
+                    areaStyle: { color: 'rgba(100,100,100,0.1)' },
+                    lineStyle: { color: '#666', width: 1, type: 'dashed' },
+                    itemStyle: { color: '#666' }
+                }]
+            }]
+        });
+
+        // 3. 趋势图
+        const trendChart = echarts.init(document.getElementById('chart-trend'));
+        trendChart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['本企业', '行业平均', '行业先进'], textStyle: { color: '#fff' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+                axisLabel: { color: '#fff' }
+            },
+            yAxis: {
+                type: 'value',
+                name: '吨布碳排放(tCO₂e)',
+                nameTextStyle: { color: '#fff' },
+                axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+            },
+            series: [
+                {
+                    name: '本企业',
+                    type: 'bar',
+                    data: [5.69, 5.45, 5.2, 5.1, 4.95, 4.84],
+                    itemStyle: { color: '#00D4AA' }
+                },
+                {
+                    name: '行业平均',
+                    type: 'line',
+                    data: [5.5, 5.5, 5.5, 5.5, 5.5, 5.5],
+                    lineStyle: { color: '#F9CA24', type: 'dashed' },
+                    itemStyle: { color: '#F9CA24' }
+                },
+                {
+                    name: '行业先进',
+                    type: 'line',
+                    data: [4.5, 4.5, 4.5, 4.5, 4.5, 4.5],
+                    lineStyle: { color: '#4ECDC4', type: 'dashed' },
+                    itemStyle: { color: '#4ECDC4' }
+                }
+            ]
+        });
+
+        // 4. ROI图
+        const roiChart = echarts.init(document.getElementById('chart-roi'));
+        roiChart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'value',
+                name: '年节能(万元)',
+                nameTextStyle: { color: '#fff' },
+                axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+            },
+            yAxis: {
+                type: 'category',
+                data: ['空压机余热', '定型机热回收', 'LED改造', '细纱机变频', '分布式光伏'],
+                axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+                axisLabel: { color: '#fff' }
+            },
+            series: [{
+                type: 'bar',
+                data: [
+                    { value: 12, itemStyle: { color: '#00D4AA' } },
+                    { value: 15, itemStyle: { color: '#4ECDC4' } },
+                    { value: 3.6, itemStyle: { color: '#45B7D1' } },
+                    { value: 18, itemStyle: { color: '#F9CA24' } },
+                    { value: 45, itemStyle: { color: '#6C5CE7' } }
+                ],
+                label: {
+                    show: true,
+                    position: 'right',
+                    color: '#fff',
+                    formatter: '{c}万/年'
+                }
+            }]
+        });
+
+        // 5. 市场规模
+        const marketChart = echarts.init(document.getElementById('chart-market'));
+        marketChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['SaaS市场', '数据服务', '咨询市场'] },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: ['第1年', '第2年', '第3年']
+            },
+            yAxis: {
+                type: 'value',
+                name: '市场规模(亿元)'
+            },
+            series: [
+                {
+                    name: 'SaaS市场',
+                    type: 'bar',
+                    stack: 'total',
+                    data: [0.2, 1.0, 5.0],
+                    itemStyle: { color: '#10B981' }
+                },
+                {
+                    name: '数据服务',
+                    type: 'bar',
+                    stack: 'total',
+                    data: [0.4, 2.0, 15.0],
+                    itemStyle: { color: '#3B82F6' }
+                },
+                {
+                    name: '咨询市场',
+                    type: 'bar',
+                    stack: 'total',
+                    data: [0.6, 3.0, 10.0],
+                    itemStyle: { color: '#8B5CF6' }
+                }
+            ]
+        });
+
+        // 6. 竞品对比
+        const compareChart = echarts.init(document.getElementById('chart-compare'));
+        compareChart.setOption({
+            tooltip: {},
+            legend: { data: ['碳智评', 'SGS咨询', 'SimaPro', '研华IoT'] },
+            radar: {
+                indicator: [
+                    { name: '成本优势', max: 100 },
+                    { name: '实施速度', max: 100 },
+                    { name: '中国适用性', max: 100 },
+                    { name: '碳财映射', max: 100 },
+                    { name: '金融对接', max: 100 },
+                    { name: '持续服务', max: 100 }
+                ]
+            },
+            series: [{
+                type: 'radar',
+                data: [
+                    {
+                        value: [95, 95, 95, 100, 100, 95],
+                        name: '碳智评',
+                        areaStyle: { color: 'rgba(16,185,129,0.3)' },
+                        lineStyle: { color: '#10B981' },
+                        itemStyle: { color: '#10B981' }
+                    },
+                    {
+                        value: [20, 30, 60, 10, 10, 20],
+                        name: 'SGS咨询',
+                        areaStyle: { color: 'rgba(239,68,68,0.1)' },
+                        lineStyle: { color: '#EF4444' },
+                        itemStyle: { color: '#EF4444' }
+                    },
+                    {
+                        value: [30, 50, 30, 10, 10, 60],
+                        name: 'SimaPro',
+                        areaStyle: { color: 'rgba(59,130,246,0.1)' },
+                        lineStyle: { color: '#3B82F6' },
+                        itemStyle: { color: '#3B82F6' }
+                    },
+                    {
+                        value: [40, 40, 30, 10, 10, 50],
+                        name: '研华IoT',
+                        areaStyle: { color: 'rgba(245,158,11,0.1)' },
+                        lineStyle: { color: '#F59E0B' },
+                        itemStyle: { color: '#F59E0B' }
+                    }
+                ]
+            }]
+        });
+
+        // 7. 单位经济模型 - 三组独立对比图（极简版）
+        const unitData = [
+            { name: '专业版SaaS', ltv: '1.08万', cac: '3k', ratio: 3.6, color: '#10B981', ltvNum: 10800, cacNum: 3000 },
+            { name: '数据服务(银行)', ltv: '8万', cac: '1.5万', ratio: 5.3, color: '#3B82F6', ltvNum: 80000, cacNum: 15000 },
+            { name: '供应链咨询', ltv: '40万', cac: '5万', ratio: 8.0, color: '#8B5CF6', ltvNum: 400000, cacNum: 50000 }
+        ];
+
+        // 清空容器并设置网格布局
+        const unitContainer = document.getElementById('chart-unit-economy');
+        unitContainer.innerHTML = '';
+        unitContainer.style.display = 'grid';
+        unitContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(300px, 1fr))';
+        unitContainer.style.gap = '32px';
+        unitContainer.style.height = 'auto';
+        unitContainer.style.padding = '20px 0';
+
+        // 创建三个极简卡片式图表
+        unitData.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.style.background = 'linear-gradient(135deg, #f8fafc, #f1f5f9)';
+            card.style.borderRadius = '16px';
+            card.style.padding = '24px';
+            card.style.border = '1px solid #e2e8f0';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.alignItems = 'center';
+            card.style.gap = '16px';
+
+            // 标题
+            const title = document.createElement('div');
+            title.textContent = item.name;
+            title.style.fontSize = '18px';
+            title.style.fontWeight = '700';
+            title.style.color = '#1e293b';
+            card.appendChild(title);
+
+            // 柱状图区域
+            const barArea = document.createElement('div');
+            barArea.style.display = 'flex';
+            barArea.style.alignItems = 'flex-end';
+            barArea.style.justifyContent = 'center';
+            barArea.style.gap = '40px';
+            barArea.style.height = '200px';
+            barArea.style.width = '100%';
+            barArea.style.padding = '0 20px';
+
+            // LTV 柱子
+            const ltvBar = document.createElement('div');
+            ltvBar.style.display = 'flex';
+            ltvBar.style.flexDirection = 'column';
+            ltvBar.style.alignItems = 'center';
+            ltvBar.style.gap = '8px';
+            ltvBar.style.flex = '1';
+
+            const ltvValue = document.createElement('div');
+            ltvValue.textContent = item.ltv;
+            ltvValue.style.fontSize = '16px';
+            ltvValue.style.fontWeight = '700';
+            ltvValue.style.color = item.color;
+
+            const ltvRect = document.createElement('div');
+            ltvRect.style.width = '60px';
+            ltvRect.style.height = '140px';
+            ltvRect.style.background = `linear-gradient(180deg, ${item.color}, ${item.color}66)`;
+            ltvRect.style.borderRadius = '8px 8px 0 0';
+            ltvRect.style.boxShadow = `0 4px 12px ${item.color}33`;
+
+            const ltvLabel = document.createElement('div');
+            ltvLabel.textContent = 'LTV';
+            ltvLabel.style.fontSize = '14px';
+            ltvLabel.style.fontWeight = '600';
+            ltvLabel.style.color = '#64748b';
+
+            ltvBar.appendChild(ltvValue);
+            ltvBar.appendChild(ltvRect);
+            ltvBar.appendChild(ltvLabel);
+
+            // CAC 柱子
+            const cacBar = document.createElement('div');
+            cacBar.style.display = 'flex';
+            cacBar.style.flexDirection = 'column';
+            cacBar.style.alignItems = 'center';
+            cacBar.style.gap = '8px';
+            cacBar.style.flex = '1';
+
+            const cacValue = document.createElement('div');
+            cacValue.textContent = item.cac;
+            cacValue.style.fontSize = '16px';
+            cacValue.style.fontWeight = '700';
+            cacValue.style.color = '#ef4444';
+
+            // CAC高度按比例
+            const cacHeight = Math.max(30, (item.cacNum / item.ltvNum) * 140);
+            const cacRect = document.createElement('div');
+            cacRect.style.width = '60px';
+            cacRect.style.height = cacHeight + 'px';
+            cacRect.style.background = 'linear-gradient(180deg, #ef4444, #ef444466)';
+            cacRect.style.borderRadius = '8px 8px 0 0';
+            cacRect.style.boxShadow = '0 4px 12px #ef444433';
+
+            const cacLabel = document.createElement('div');
+            cacLabel.textContent = 'CAC';
+            cacLabel.style.fontSize = '14px';
+            cacLabel.style.fontWeight = '600';
+            cacLabel.style.color = '#64748b';
+
+            cacBar.appendChild(cacValue);
+            cacBar.appendChild(cacRect);
+            cacBar.appendChild(cacLabel);
+
+            barArea.appendChild(ltvBar);
+            barArea.appendChild(cacBar);
+            card.appendChild(barArea);
+
+            // 底部比值
+            const ratio = document.createElement('div');
+            ratio.textContent = 'LTV / CAC = ' + item.ratio;
+            ratio.style.fontSize = '20px';
+            ratio.style.fontWeight = '800';
+            ratio.style.color = item.color;
+            ratio.style.marginTop = '8px';
+            card.appendChild(ratio);
+
+            unitContainer.appendChild(card);
+        });
+
+        // 响应式
+        window.addEventListener('resize', () => {
+            sankeyChart.resize();
+            radarChart.resize();
+            trendChart.resize();
+            roiChart.resize();
+            marketChart.resize();
+            compareChart.resize();
+            // unitChart 现在是多个小图表，不需要统一resize
+        });
+
+        // ==================== 痛点详情弹窗 ====================
+        function showPainDetail(index) {
+            const pains = [
+                { title: '算不准', desc: '人工估算误差高达32%，缺乏专业核算人员与标准化工具。碳智评通过参数化反演算法，仅需企业填报基础设备参数，即可在3分钟内完成全厂碳足迹精准核算，误差控制在1%以内。', icon: 'fa-calculator', color: 'red' },
+                { title: '看不见', desc: '隐性环境成本在传统财务报表中完全不可见。碳智评的环境成本穿透分析，将碳排放数据映射为财务语言，企业主首次能够清晰看到每台设备、每道工序的环境成本。', icon: 'fa-eye-slash', color: 'yellow' },
+                { title: '比不了', desc: '孤立数据无行业对标，无法判断自身碳效水平。碳智评通过SaaS平台汇聚数千家企业的匿名碳效数据，形成动态更新的行业基准线数据库，实现平台化对标。', icon: 'fa-chart-bar', color: 'blue' },
+                { title: '贷不到', desc: '银行单户尽调成本3万元，中小企业被系统性排斥。碳智评的碳效评级系统将单户尽调成本降至500元，为银行规模化开拓纺织业绿色信贷扫清障碍。', icon: 'fa-hand-holding-usd', color: 'purple' }
+            ];
+
+            const pain = pains[index];
+            alert(`${pain.title}\n\n${pain.desc}\n\n碳智评解决方案：\n• ${pain.title === '算不准' ? '参数化反演算法，误差<1%' : pain.title === '看不见' ? '碳-财双维映射，设备级成本分摊' : pain.title === '比不了' ? '行业基准线数据库，动态更新' : '碳效评级系统，银行直接采信'}`);
+        }
+
+        // 初始化进度条动画
+        setTimeout(() => {
+            document.querySelectorAll('.progress-bar-fill').forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 100);
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
