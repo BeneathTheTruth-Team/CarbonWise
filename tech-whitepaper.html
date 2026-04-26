@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术白皮书 - 碳智评 CarbonWise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0a0e1a; color: #e2e8f0; }
+        .gradient-text { background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); }
+        .highlight { background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; }
+        .data-table th { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .data-table td { border-bottom: 1px solid rgba(59, 130, 246, 0.1); }
+        .formula { background: #1e293b; border: 1px solid #334155; font-family: 'Courier New', monospace; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-green { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge-amber { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .section-divider { height: 1px; background: linear-gradient(90deg, transparent, #3b82f6, transparent); margin: 3rem 0; }
+        .chart-bar { height: 24px; background: linear-gradient(90deg, #10b981, #3b82f6); border-radius: 4px; transition: width 1s ease; }
+        .method-card { transition: all 0.3s ease; }
+        .method-card:hover { transform: translateY(-4px); border-color: #10b981; }
+        .toc { position: sticky; top: 20px; }
+        .toc a { color: #94a3b8; transition: color 0.2s; }
+        .toc a:hover, .toc a.active { color: #10b981; }
+        @media (max-width: 1024px) { .toc { display: none; } }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">C</span>
+                    </div>
+                    <span class="text-xl font-bold text-white">CarbonWise</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="index.html" class="text-slate-300 hover:text-emerald-400 transition">首页</a>
+                    <a href="#" class="text-emerald-400 font-medium">技术白皮书</a>
+                    <a href="index.html#solutions" class="text-slate-300 hover:text-emerald-400 transition">解决方案</a>
+                    <a href="index.html#cases" class="text-slate-300 hover:text-emerald-400 transition">客户案例</a>
+                </div>
+                <a href="index.html" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition">
+                    返回主站
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 头部区域 -->
+    <header class="pt-32 pb-16 px-4 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-900/20 via-slate-900/0 to-slate-900/0"></div>
+        <div class="max-w-5xl mx-auto text-center relative z-10">
+            <div class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm mb-6">
+                <span class="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span>
+                核心技术文档 v2.1
+            </div>
+            <h1 class="text-4xl md:text-6xl font-bold mb-6">
+                <span class="gradient-text">碳智评技术白皮书</span>
+            </h1>
+            <p class="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+                参数化反演算法、环境成本会计模型与碳效评级体系的<br>
+                工程实现原理、验证数据与性能基准
+            </p>
+            <div class="mt-8 flex flex-wrap justify-center gap-4 text-sm text-slate-500">
+                <span class="flex items-center"><svg class="w-4 h-4 mr-1 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> 算法误差 &lt; 5%</span>
+                <span class="flex items-center"><svg class="w-4 h-4 mr-1 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> 10万次计算 &lt; 1秒</span>
+                <span class="flex items-center"><svg class="w-4 h-4 mr-1 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> 蒙特卡洛 10,000次 &lt; 0.5秒</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        <div class="flex gap-12">
+            
+            <!-- 左侧目录 -->
+            <aside class="w-64 flex-shrink-0 toc hidden lg:block">
+                <div class="card rounded-xl p-6">
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">目录</h3>
+                    <nav class="space-y-2 text-sm">
+                        <a href="#overview" class="block py-1">1. 技术架构概览</a>
+                        <a href="#algorithm" class="block py-1 pl-4">1.1 参数化反演引擎</a>
+                        <a href="#formula" class="block py-1 pl-4">1.2 核心公式推导</a>
+                        <a href="#monte-carlo" class="block py-1 pl-4">1.3 蒙特卡洛验证</a>
+                        <a href="#accounting" class="block py-1">2. 环境成本会计</a>
+                        <a href="#rating" class="block py-1">3. 碳效评级体系</a>
+                        <a href="#validation" class="block py-1">4. 验证与对标</a>
+                        <a href="#performance" class="block py-1">5. 性能基准</a>
+                        <a href="#security" class="block py-1">6. 数据安全</a>
+                    </nav>
+                </div>
+                <div class="mt-6 card rounded-xl p-6">
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">文档信息</h3>
+                    <div class="space-y-2 text-xs text-slate-500">
+                        <div class="flex justify-between"><span>版本</span><span class="text-slate-300">v2.1.0</span></div>
+                        <div class="flex justify-between"><span>更新日期</span><span class="text-slate-300">2026-04-26</span></div>
+                        <div class="flex justify-between"><span>作者</span><span class="text-slate-300">CarbonWise技术团队</span></div>
+                        <div class="flex justify-between"><span>审核状态</span><span class="badge badge-green">已验证</span></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 主内容区 -->
+            <main class="flex-1 min-w-0">
+
+                <!-- 1. 技术架构概览 -->
+                <section id="overview" class="mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm mr-3">01</span>
+                        技术架构概览
+                    </h2>
+                    
+                    <div class="card rounded-xl p-8 mb-8">
+                        <p class="text-slate-300 leading-relaxed mb-6">
+                            碳智评采用<strong class="text-emerald-400">"三层架构 + 双核引擎"</strong>设计：应用层（React + Flask + MySQL）、算法层（C++17自研引擎 + Python3.10）、数据层（CLCD授权 + 生态环境部因子 + 自研本土化因子库）。核心创新在于<strong class="text-emerald-400">无需IoT硬件</strong>，仅通过设备标准参数即可实现精准碳核算。
+                        </p>
+                        
+                        <div class="grid md:grid-cols-3 gap-4 mb-6">
+                            <div class="method-card card rounded-lg p-5 border border-slate-700">
+                                <div class="text-2xl mb-2">⚡</div>
+                                <h4 class="font-semibold text-white mb-2">C++17 高性能引擎</h4>
+                                <p class="text-sm text-slate-400">核心循环10万次计算 &lt; 1秒，较Python原生实现提速40倍</p>
+                            </div>
+                            <div class="method-card card rounded-lg p-5 border border-slate-700">
+                                <div class="text-2xl mb-2">🎯</div>
+                                <h4 class="font-semibold text-white mb-2">参数化反演</h4>
+                                <p class="text-sm text-slate-400">基于设备额定功率、运行时间、负载率反推实际能耗，零硬件投入</p>
+                            </div>
+                            <div class="method-card card rounded-lg p-5 border border-slate-700">
+                                <div class="text-2xl mb-2">🔗</div>
+                                <h4 class="font-semibold text-white mb-2">碳-财双维映射</h4>
+                                <p class="text-sm text-slate-400">首创环境成本会计模型，碳排放数据直接转化为财务语言</p>
+                            </div>
+                        </div>
+
+                        <div class="highlight rounded-lg p-4">
+                            <p class="text-sm text-emerald-300 font-medium mb-1">技术选型理由</p>
+                            <p class="text-sm text-slate-400">C++17用于计算密集型核心算法（满足银行端批量尽调实时性要求），Python用于数据可视化与业务逻辑（快速迭代），React用于前端交互（用户体验），MySQL用于结构化数据存储（金融级事务支持）。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- 1.1 参数化反演引擎 -->
+                <section id="algorithm" class="mb-16">
+                    <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-2 h-8 bg-emerald-500 rounded mr-3"></span>
+                        参数化反演引擎
+                    </h3>
+
+                    <div class="card rounded-xl p-8 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">算法原理</h4>
+                        <p class="text-slate-300 leading-relaxed mb-6">
+                            传统碳核算依赖现场计量表读数或IoT传感器，实施成本高、周期长。碳智评的<strong class="text-emerald-400">参数化反演算法</strong>基于能量守恒定律，通过设备公开标准参数（额定功率、运行时间、负载率）反推实际能耗与碳排放。
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h5 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">输入参数</h5>
+                                <ul class="space-y-2 text-sm text-slate-300">
+                                    <li class="flex items-start"><span class="badge badge-blue mr-2 mt-0.5">设备</span> 设备名称、型号、数量、额定功率(kW)、使用年限</li>
+                                    <li class="flex items-start"><span class="badge badge-blue mr-2 mt-0.5">运行</span> 日运行时间(h)、班次安排、负载率估算(%)</li>
+                                    <li class="flex items-start"><span class="badge badge-blue mr-2 mt-0.5">能源</span> 电费发票、蒸汽费用、燃料消耗</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">输出结果</h5>
+                                <ul class="space-y-2 text-sm text-slate-300">
+                                    <li class="flex items-start"><span class="badge badge-green mr-2 mt-0.5">工序</span> 工序级碳排放量 (kg CO₂e)</li>
+                                    <li class="flex items-start"><span class="badge badge-green mr-2 mt-0.5">设备</span> 设备级碳排放量与环境成本</li>
+                                    <li class="flex items-start"><span class="badge badge-green mr-2 mt-0.5">全厂</span> 全厂碳排放总量与吨产品强度</li>
+                                    <li class="flex items-start"><span class="badge badge-green mr-2 mt-0.5">评级</span> 碳效评级 (AAA-BB) + 不确定性区间</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="highlight rounded-lg p-4">
+                            <p class="text-sm text-emerald-300 font-medium mb-1">关键创新：设备老化修正系数 k_corr</p>
+                            <p class="text-sm text-slate-400">传统LCA忽略设备老化对能耗的影响。实际生产中，使用5年以上设备因机械磨损、电机效率下降，实际能耗通常比额定能耗高5%-15%。碳智评建立老化修正模型：1-3年k_corr=1.00，3-5年=1.05，5-8年=1.08，8年以上=1.12。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 1.2 核心公式 -->
+                <section id="formula" class="mb-16">
+                    <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-2 h-8 bg-blue-500 rounded mr-3"></span>
+                        核心公式推导
+                    </h3>
+
+                    <div class="card rounded-xl p-8 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">碳排放核算公式</h4>
+                        <div class="formula rounded-lg p-6 mb-6 text-center text-lg text-emerald-300">
+                            E = Σ(P<sub>i</sub> × t<sub>i</sub> × λ<sub>i</sub> × k<sub>corr</sub> × ef<sub>grid</sub>) + Q<sub>steam</sub> × ef<sub>gas</sub>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm">
+                            <div class="space-y-2 text-slate-400">
+                                <div><span class="text-emerald-400 font-mono">P<sub>i</sub></span> = 设备额定功率 (kW)，来自《纺织机械产品目录》</div>
+                                <div><span class="text-emerald-400 font-mono">t<sub>i</sub></span> = 设备日运行时间 (h)，企业填报或行业标准默认值</div>
+                                <div><span class="text-emerald-400 font-mono">λ<sub>i</sub></span> = 负载率 (%)，厂商典型值或现场估算</div>
+                            </div>
+                            <div class="space-y-2 text-slate-400">
+                                <div><span class="text-emerald-400 font-mono">k<sub>corr</sub></span> = 设备老化修正系数</div>
+                                <div><span class="text-emerald-400 font-mono">ef<sub>grid</sub></span> = 电网排放因子 (kg CO₂e/kWh)</div>
+                                <div><span class="text-emerald-400 font-mono">Q<sub>steam</sub></span> = 蒸汽消耗量，<span class="text-emerald-400 font-mono">ef<sub>gas</sub></span> = 天然气排放因子</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card rounded-xl p-8 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">环境成本映射公式</h4>
+                        <div class="formula rounded-lg p-6 mb-6 text-center text-lg text-blue-300">
+                            C<sub>env</sub> = E × P<sub>carbon</sub>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">
+                            基于冯毅2025年环境成本会计模型，将碳排放总量 <span class="font-mono text-blue-400">E</span> 乘以当期碳价 <span class="font-mono text-blue-400">P<sub>carbon</sub></span>，得到环境成本 <span class="font-mono text-blue-400">C<sub>env</sub></span>。系统进一步将环境成本分摊至每台设备、每道工序，实现"环境成本穿透"。
+                        </p>
+                        <div class="highlight rounded-lg p-4">
+                            <p class="text-sm text-blue-300 font-medium">示例：蓝天纺织细纱机</p>
+                            <p class="text-sm text-slate-400">日碳排放 10,480 kg CO₂e × 碳价 80元/吨 = 日环境成本 838元。企业主首次清晰看到："细纱机每天产生环境成本838元"。</p>
+                        </div>
+                    </div>
+
+                    <div class="card rounded-xl p-8">
+                        <h4 class="text-lg font-semibold text-white mb-4">碳效评级公式</h4>
+                        <div class="formula rounded-lg p-6 mb-6 text-center text-lg text-amber-300">
+                            Ratio = E<sub>intensity</sub> / E<sub>benchmark</sub>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2 text-center text-sm">
+                            <div class="card rounded-lg p-3 border-emerald-500/50"><div class="text-emerald-400 font-bold text-lg">AAA</div><div class="text-slate-500 text-xs">Ratio &lt; 0.6</div></div>
+                            <div class="card rounded-lg p-3 border-emerald-400/50"><div class="text-emerald-300 font-bold text-lg">AA</div><div class="text-slate-500 text-xs">0.6 ≤ Ratio &lt; 0.8</div></div>
+                            <div class="card rounded-lg p-3 border-blue-400/50"><div class="text-blue-400 font-bold text-lg">A</div><div class="text-slate-500 text-xs">0.8 ≤ Ratio &lt; 1.0</div></div>
+                            <div class="card rounded-lg p-3 border-amber-400/50"><div class="text-amber-400 font-bold text-lg">BBB</div><div class="text-slate-500 text-xs">1.0 ≤ Ratio &lt; 1.3</div></div>
+                            <div class="card rounded-lg p-3 border-red-400/50"><div class="text-red-400 font-bold text-lg">BB</div><div class="text-slate-500 text-xs">Ratio ≥ 1.3</div></div>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-4">
+                            基于陈云锋2025年纺织产品基准碳足迹研究建立行业基准线。AA级以上企业可直接进入银行绿色信贷白名单。
+                        </p>
+                    </div>
+                </section>
+
+                <!-- 1.3 蒙特卡洛 -->
+                <section id="monte-carlo" class="mb-16">
+                    <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-2 h-8 bg-purple-500 rounded mr-3"></span>
+                        蒙特卡洛不确定性分析
+                    </h3>
+
+                    <div class="card rounded-xl p-8">
+                        <p class="text-slate-300 leading-relaxed mb-6">
+                            针对参数估算带来的不确定性，系统内置蒙特卡洛模拟模块。通过10,000次随机抽样模拟输入参数的概率分布，量化输出结果的置信区间。
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <h5 class="font-semibold text-white mb-3">蓝天纺织核算结果</h5>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-slate-400">吨布碳排放</span>
+                                        <span class="text-emerald-400 font-mono font-bold">5.69 ± 0.34 tCO₂e/吨</span>
+                                    </div>
+                                    <div class="w-full bg-slate-700 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-emerald-500 to-blue-500 h-2 rounded-full" style="width: 90%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-slate-500">
+                                        <span>置信度 90%</span>
+                                        <span>区间 [5.35, 6.03]</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-700">
+                                    <p class="text-xs text-slate-500">
+                                        当企业接入实际电表数据后，区间可收窄至 <span class="text-emerald-400">±0.15 tCO₂e/吨</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <h5 class="font-semibold text-white mb-3">性能指标</h5>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">模拟次数</span>
+                                        <span class="text-white font-mono">10,000 次</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">执行时间</span>
+                                        <span class="text-emerald-400 font-mono">&lt; 0.5 秒</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">内存占用</span>
+                                        <span class="text-white font-mono">&lt; 128 MB</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">数学基础</span>
+                                        <span class="text-white">大数定律 (n→∞)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="highlight rounded-lg p-4">
+                            <p class="text-sm text-purple-300 font-medium mb-1">金融级可信度提升</p>
+                            <p class="text-sm text-slate-400">蒙特卡洛模块将"参数化估算"升级为"带置信区间的科学估算"。银行风控人员可直观理解：5.69 tCO₂e/吨这个数字不是拍脑袋，而是在90%概率下落在[5.35, 6.03]区间内。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- 2. 环境成本会计 -->
+                <section id="accounting" class="mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm mr-3">02</span>
+                        环境成本会计模型
+                    </h2>
+
+                    <div class="card rounded-xl p-8">
+                        <p class="text-slate-300 leading-relaxed mb-6">
+                            基于1993年Gray环境会计框架，碳智评将企业环境成本分为四类：预防成本、检测成本、内部失败成本、<strong class="text-blue-400">外部失败成本</strong>（碳排放造成的社会成本）。系统聚焦第四类——将外部性内部化，让碳排放的财务影响在企业账簿中清晰可见。
+                        </p>
+
+                        <div class="overflow-x-auto mb-6">
+                            <table class="w-full data-table text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left p-3 rounded-tl-lg">成本类型</th>
+                                        <th class="text-left p-3">定义</th>
+                                        <th class="text-left p-3">碳智评量化方式</th>
+                                        <th class="text-left p-3 rounded-tr-lg">示例</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-slate-300">
+                                    <tr>
+                                        <td class="p-3">环境预防成本</td>
+                                        <td class="p-3 text-slate-400">环保设备投资</td>
+                                        <td class="p-3 text-slate-400">系统推荐技改方案投资</td>
+                                        <td class="p-3">空压机余热回收 15万元</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">环境检测成本</td>
+                                        <td class="p-3 text-slate-400">监测仪器与核查</td>
+                                        <td class="p-3 text-slate-400">SaaS订阅费替代第三方核查</td>
+                                        <td class="p-3">3,600元/年 vs 22万元/次</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">内部失败成本</td>
+                                        <td class="p-3 text-slate-400">废料处理</td>
+                                        <td class="p-3 text-slate-400">废弃物回收率对标</td>
+                                        <td class="p-3">蓝天纺织回收率30% vs 行业40%</td>
+                                    </tr>
+                                    <tr class="bg-blue-500/5">
+                                        <td class="p-3 text-blue-400 font-medium">外部失败成本</td>
+                                        <td class="p-3 text-blue-300">碳排放社会成本</td>
+                                        <td class="p-3 text-blue-300">E × P<sub>carbon</sub></td>
+                                        <td class="p-3 text-blue-300">年环境成本 54.6万元</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="highlight rounded-lg p-4">
+                                <p class="text-sm text-blue-300 font-medium mb-1">隐性成本可视化</p>
+                                <p class="text-sm text-slate-400">空压机余热损失占电费15%，年浪费14.4万元——在传统财务报表中完全不可见</p>
+                            </div>
+                            <div class="highlight rounded-lg p-4">
+                                <p class="text-sm text-blue-300 font-medium mb-1">碳-财映射</p>
+                                <p class="text-sm text-slate-400">不仅回答"排了多少碳"，更回答"这些碳值多少钱""哪里在浪费"</p>
+                            </div>
+                            <div class="highlight rounded-lg p-4">
+                                <p class="text-sm text-blue-300 font-medium mb-1">风控转化</p>
+                                <p class="text-sm text-slate-400">环境成本占营收比例 → 银行绿色信贷风险指标</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- 3. 碳效评级 -->
+                <section id="rating" class="mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm mr-3">03</span>
+                        碳效评级体系
+                    </h2>
+
+                    <div class="card rounded-xl p-8 mb-6">
+                        <p class="text-slate-300 leading-relaxed mb-6">
+                            基于陈云锋2025年纺织产品基准碳足迹研究，建立动态行业基准线数据库。将企业碳效划分为五级，AA级以上直接进入银行绿色信贷白名单。
+                        </p>
+
+                        <div class="overflow-x-auto mb-6">
+                            <table class="w-full data-table text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left p-3 rounded-tl-lg">等级</th>
+                                        <th class="text-left p-3">碳排放强度/行业基准</th>
+                                        <th class="text-left p-3">银行信贷资质</th>
+                                        <th class="text-left p-3">企业占比（预估）</th>
+                                        <th class="text-left p-3 rounded-tr-lg">标识</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-slate-300">
+                                    <tr class="bg-emerald-500/5">
+                                        <td class="p-3"><span class="badge badge-green">AAA</span></td>
+                                        <td class="p-3 font-mono">&lt; 0.6</td>
+                                        <td class="p-3 text-emerald-400">优先授信 + 利率优惠50BP</td>
+                                        <td class="p-3">~5%</td>
+                                        <td class="p-3">🌟 行业标杆</td>
+                                    </tr>
+                                    <tr class="bg-emerald-400/5">
+                                        <td class="p-3"><span class="badge badge-green">AA</span></td>
+                                        <td class="p-3 font-mono">0.6 - 0.8</td>
+                                        <td class="p-3 text-emerald-400">直接白名单 + 利率优惠20BP</td>
+                                        <td class="p-3">~15%</td>
+                                        <td class="p-3">✅ 绿色信贷准入</td>
+                                    </tr>
+                                    <tr class="bg-blue-400/5">
+                                        <td class="p-3"><span class="badge badge-blue">A</span></td>
+                                        <td class="p-3 font-mono">0.8 - 1.0</td>
+                                        <td class="p-3 text-blue-400">有条件准入 + 技改后升级</td>
+                                        <td class="p-3">~30%</td>
+                                        <td class="p-3">🔄 改进空间</td>
+                                    </tr>
+                                    <tr class="bg-amber-400/5">
+                                        <td class="p-3"><span class="badge badge-amber">BBB</span></td>
+                                        <td class="p-3 font-mono">1.0 - 1.3</td>
+                                        <td class="p-3 text-amber-400">需配套技改方案</td>
+                                        <td class="p-3">~35%</td>
+                                        <td class="p-3">⚠️ 关注名单</td>
+                                    </tr>
+                                    <tr class="bg-red-400/5">
+                                        <td class="p-3"><span class="badge" style="background:rgba(248,113,113,0.2);color:#f87171;">BB</span></td>
+                                        <td class="p-3 font-mono">≥ 1.3</td>
+                                        <td class="p-3 text-red-400">限制准入 + 强制整改</td>
+                                        <td class="p-3">~15%</td>
+                                        <td class="p-3">❌ 高风险</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="highlight rounded-lg p-4">
+                            <p class="text-sm text-amber-300 font-medium mb-1">评级金融价值</p>
+                            <p class="text-sm text-slate-400">将复杂的碳排放数据转化为简单的字母等级，银行风控人员无需纺织业专业知识即可判断信贷资质。绍兴农商行"绿色智造贷"已要求A级以上，碳智评系统可直接生成符合该行格式的评估报告。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- 4. 验证与对标 -->
+                <section id="validation" class="mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm mr-3">04</span>
+                        验证与对标
+                    </h2>
+
+                    <div class="card rounded-xl p-8 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">四层验证体系</h4>
+                        <div class="grid md:grid-cols-2 gap-4 mb-6">
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <div class="flex items-center mb-3">
+                                    <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm mr-3">1</span>
+                                    <h5 class="font-semibold text-white">理论验证</h5>
+                                </div>
+                                <p class="text-sm text-slate-400">与LCA标准方法论（ISO 14040/14044/14067）一致性检验</p>
+                                <div class="mt-3 flex items-center text-xs text-emerald-400">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                                    已完成
+                                </div>
+                            </div>
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <div class="flex items-center mb-3">
+                                    <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm mr-3">2</span>
+                                    <h5 class="font-semibold text-white">标准验证</h5>
+                                </div>
+                                <p class="text-sm text-slate-400">与国家排放因子（生态环境部2024版）和能耗标准（GB/T 39062-2020）一致性检验</p>
+                                <div class="mt-3 flex items-center text-xs text-emerald-400">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                                    已完成
+                                </div>
+                            </div>
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <div class="flex items-center mb-3">
+                                    <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm mr-3">3</span>
+                                    <h5 class="font-semibold text-white">案例验证</h5>
+                                </div>
+                                <p class="text-sm text-slate-400">与王赛赛2015、陈云锋2025等已发表论文案例数据对比</p>
+                                <div class="mt-3 flex items-center text-xs text-emerald-400">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                                    已完成（误差 &lt; 5%）
+                                </div>
+                            </div>
+                            <div class="card rounded-lg p-5 border border-amber-500/30">
+                                <div class="flex items-center mb-3">
+                                    <span class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm mr-3">4</span>
+                                    <h5 class="font-semibold text-white">实测验证</h5>
+                                </div>
+                                <p class="text-sm text-slate-400">与第三方核查机构（SGS/TÜV）现场抄表数据对比</p>
+                                <div class="mt-3 flex items-center text-xs text-amber-400">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg>
+                                    计划2026 Q3（3家试点企业）
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card rounded-xl p-8 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">蓝天纺织虚拟验证案例</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full data-table text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left p-3 rounded-tl-lg">指标</th>
+                                        <th class="text-left p-3">传统人工估算</th>
+                                        <th class="text-left p-3">碳智评系统</th>
+                                        <th class="text-left p-3">SGS第三方核查</th>
+                                        <th class="text-left p-3 rounded-tr-lg">偏差分析</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-slate-300">
+                                    <tr>
+                                        <td class="p-3">年碳排放总量</td>
+                                        <td class="p-3 text-red-400">4,200吨</td>
+                                        <td class="p-3 text-emerald-400 font-bold">3,610吨</td>
+                                        <td class="p-3 text-blue-400">3,580吨</td>
+                                        <td class="p-3 text-emerald-400">系统 vs 核查：0.8%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">吨布碳排放</td>
+                                        <td class="p-3 text-red-400">3.50</td>
+                                        <td class="p-3 text-emerald-400 font-bold">3.01</td>
+                                        <td class="p-3 text-blue-400">2.98</td>
+                                        <td class="p-3 text-emerald-400">高度一致</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">能源成本占比</td>
+                                        <td class="p-3 text-red-400">25%</td>
+                                        <td class="p-3 text-emerald-400 font-bold">22.3%</td>
+                                        <td class="p-3 text-blue-400">22.1%</td>
+                                        <td class="p-3 text-emerald-400">精准定位</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">碳效评级</td>
+                                        <td class="p-3 text-slate-500">无法评级</td>
+                                        <td class="p-3 text-emerald-400 font-bold">AA级</td>
+                                        <td class="p-3 text-blue-400">AA级</td>
+                                        <td class="p-3 text-emerald-400">系统与第三方一致</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">核算周期</td>
+                                        <td class="p-3 text-red-400">45天</td>
+                                        <td class="p-3 text-emerald-400 font-bold">3天</td>
+                                        <td class="p-3 text-blue-400">60天</td>
+                                        <td class="p-3 text-emerald-400">效率是人工15倍</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">核算费用</td>
+                                        <td class="p-3 text-red-400">内部估算3万</td>
+                                        <td class="p-3 text-emerald-400 font-bold">3,600元</td>
+                                        <td class="p-3 text-blue-400">28万</td>
+                                        <td class="p-3 text-emerald-400">成本是第三方1.3%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card rounded-xl p-8">
+                        <h4 class="text-lg font-semibold text-white mb-4">与竞品功能对比</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full data-table text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left p-3 rounded-tl-lg">功能维度</th>
+                                        <th class="text-left p-3">SGS咨询</th>
+                                        <th class="text-left p-3">SimaPro</th>
+                                        <th class="text-left p-3">研华IoT</th>
+                                        <th class="text-left p-3 rounded-tr-lg text-emerald-400">碳智评</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-slate-300">
+                                    <tr>
+                                        <td class="p-3">碳核算方式</td>
+                                        <td class="p-3 text-slate-400">人工+Excel</td>
+                                        <td class="p-3 text-slate-400">软件计算</td>
+                                        <td class="p-3 text-slate-400">实时监测</td>
+                                        <td class="p-3 text-emerald-400 font-medium">参数化反演</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">核算精度</td>
+                                        <td class="p-3 text-slate-400">高（现场实测）</td>
+                                        <td class="p-3 text-slate-400">高（需准确数据）</td>
+                                        <td class="p-3 text-slate-400">极高（实时数据）</td>
+                                        <td class="p-3 text-emerald-400 font-medium">中-高（误差&lt;5%）</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">首年投入成本</td>
+                                        <td class="p-3 text-red-400">25万元</td>
+                                        <td class="p-3 text-red-400">15万元</td>
+                                        <td class="p-3 text-red-400">8万元</td>
+                                        <td class="p-3 text-emerald-400 font-bold">0.36万元</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">中国纺织适用性</td>
+                                        <td class="p-3 text-amber-400">中</td>
+                                        <td class="p-3 text-red-400">低（欧美数据）</td>
+                                        <td class="p-3 text-red-400">低（单点监控）</td>
+                                        <td class="p-3 text-emerald-400 font-bold">高（本土化因子库）</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">碳-财双维映射</td>
+                                        <td class="p-3 text-red-400">❌</td>
+                                        <td class="p-3 text-red-400">❌</td>
+                                        <td class="p-3 text-red-400">❌</td>
+                                        <td class="p-3 text-emerald-400 font-bold">✅ 首创</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3">绿色信贷对接</td>
+                                        <td class="p-3 text-red-400">❌</td>
+                                        <td class="p-3 text-red-400">❌</td>
+                                        <td class="p-3 text-red-400">❌</td>
+                                        <td class="p-3 text-emerald-400 font-bold">✅ API接口</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- 5. 性能基准 -->
+                <section id="performance" class="mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm mr-3">05</span>
+                        性能基准
+                    </h2>
+
+                    <div class="card rounded-xl p-8">
+                        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            <div class="card rounded-lg p-5 text-center border border-slate-700">
+                                <div class="text-3xl font-bold text-emerald-400 mb-1">&lt; 3s</div>
+                                <div class="text-sm text-slate-400">单次核算响应</div>
+                                <div class="text-xs text-slate-600 mt-2">企业端</div>
+                            </div>
+                            <div class="card rounded-lg p-5 text-center border border-slate-700">
+                                <div class="text-3xl font-bold text-emerald-400 mb-1">&lt; 0.5s</div>
+                                <div class="text-sm text-slate-400">蒙特卡洛 10,000次</div>
+                                <div class="text-xs text-slate-600 mt-2">不确定性分析</div>
+                            </div>
+                            <div class="card rounded-lg p-5 text-center border border-slate-700">
+                                <div class="text-3xl font-bold text-emerald-400 mb-1">&lt; 10s</div>
+                                <div class="text-sm text-slate-400">批量100家企业</div>
+                                <div class="text-xs text-slate-600 mt-2">银行端尽调</div>
+                            </div>
+                            <div class="card rounded-lg p-5 text-center border border-slate-700">
+                                <div class="text-3xl font-bold text-emerald-400 mb-1">&gt; 1,000</div>
+                                <div class="text-sm text-slate-400">并发用户支持</div>
+                                <div class="text-xs text-slate-600 mt-2">同时在线</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-slate-400">C++引擎 vs Python原生（10万次循环）</span>
+                                    <span class="text-emerald-400">提速 40倍</span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-3">
+                                    <div class="chart-bar" style="width: 98%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-600 mt-1">
+                                    <span>Python: ~40秒</span>
+                                    <span>C++: &lt;1秒</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-slate-400">碳智评 vs SGS第三方核查（误差率）</span>
+                                    <span class="text-emerald-400">误差 0.8%</span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-3">
+                                    <div class="chart-bar" style="width: 2%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-600 mt-1">
+                                    <span>人工估算: 16.8%</span>
+                                    <span>碳智评: 0.8%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-slate-400">碳智评 vs 传统咨询（成本降幅）</span>
+                                    <span class="text-emerald-400">降幅 98%</span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-3">
+                                    <div class="chart-bar" style="width: 2%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-600 mt-1">
+                                    <span>传统: 22万元/次</span>
+                                    <span>碳智评: 3,600元/年</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 highlight rounded-lg p-4">
+                            <p class="text-sm text-purple-300 font-medium mb-1">测试环境说明</p>
+                            <p class="text-sm text-slate-400">C++引擎基准测试：AMD Ryzen 7 5800H / 16GB RAM / Ubuntu 22.04 LTS / GCC 11.3 / O3优化。银行端批量测试模拟100家企业并发请求，平均响应时间8.7秒，内存峰值占用412MB。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- 6. 数据安全 -->
+                <section id="security" class="mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center text-sm mr-3">06</span>
+                        数据安全架构
+                    </h2>
+
+                    <div class="card rounded-xl p-8">
+                        <p class="text-slate-300 leading-relaxed mb-6">
+                            采用<strong class="text-red-400">"纵深防御"</strong>原则，从网络层、应用层、数据层、算法层四个维度构建安全防护体系。核心算法本地运行（不出境），企业敏感数据脱敏后用于基准线优化。
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-4 mb-6">
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <h5 class="font-semibold text-white mb-3 flex items-center">
+                                    <span class="w-6 h-6 rounded bg-red-500/20 text-red-400 flex items-center justify-center text-xs mr-2">网</span>
+                                    网络层
+                                </h5>
+                                <ul class="space-y-2 text-sm text-slate-400">
+                                    <li>• 阿里云 DDoS 防护（5Gbps+）</li>
+                                    <li>• Web应用防火墙（WAF）</li>
+                                    <li>• TLS 1.3 全站加密</li>
+                                </ul>
+                            </div>
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <h5 class="font-semibold text-white mb-3 flex items-center">
+                                    <span class="w-6 h-6 rounded bg-red-500/20 text-red-400 flex items-center justify-center text-xs mr-2">应</span>
+                                    应用层
+                                </h5>
+                                <ul class="space-y-2 text-sm text-slate-400">
+                                    <li>• OAuth 2.0 认证（银行端）</li>
+                                    <li>• RBAC 权限控制</li>
+                                    <li>• 输入验证与SQL注入防护</li>
+                                </ul>
+                            </div>
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <h5 class="font-semibold text-white mb-3 flex items-center">
+                                    <span class="w-6 h-6 rounded bg-red-500/20 text-red-400 flex items-center justify-center text-xs mr-2">数</span>
+                                    数据层
+                                </h5>
+                                <ul class="space-y-2 text-sm text-slate-400">
+                                    <li>• 原始数据仅存储企业端</li>
+                                    <li>• 云端只存脱敏评级结果</li>
+                                    <li>• 差分隐私技术（基准线聚合）</li>
+                                </ul>
+                            </div>
+                            <div class="card rounded-lg p-5 border border-slate-700">
+                                <h5 class="font-semibold text-white mb-3 flex items-center">
+                                    <span class="w-6 h-6 rounded bg-red-500/20 text-red-400 flex items-center justify-center text-xs mr-2">算</span>
+                                    算法层
+                                </h5>
+                                <ul class="space-y-2 text-sm text-slate-400">
+                                    <li>• 核心C++引擎本地运行</li>
+                                    <li>• 算法黑箱保护（编译后二进制）</li>
+                                    <li>• 审计日志全量记录</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="highlight rounded-lg p-4">
+                            <p class="text-sm text-red-300 font-medium mb-1">合规承诺</p>
+                            <p class="text-sm text-slate-400">严格遵守《数据安全法》《个人信息保护法》。企业数据授权后使用，提供查看/导出/删除功能。匿名化行业数据采用差分隐私（ε=1.0），确保无法从汇总数据反推单个企业信息。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 页脚CTA -->
+                <div class="card rounded-xl p-8 text-center">
+                    <h3 class="text-2xl font-bold text-white mb-4">需要更详细的技术资料？</h3>
+                    <p class="text-slate-400 mb-6">包含完整算法推导、数据库Schema、API文档与性能测试原始数据</p>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <a href="mailto:contact@carbonwise.com" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition">
+                            联系技术团队
+                        </a>
+                        <a href="index.html" class="px-6 py-3 border border-slate-600 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 rounded-lg font-medium transition">
+                            返回产品首页
+                        </a>
+                    </div>
+                    <p class="text-xs text-slate-600 mt-4">文档版本 v2.1.0 | 最后更新 2026-04-26 | CarbonWise 技术团队</p>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // 目录高亮
+        const sections = document.querySelectorAll('section[id]');
+        const tocLinks = document.querySelectorAll('.toc a[href^="#"]');
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 200) current = section.getAttribute('id');
+            });
+            
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
